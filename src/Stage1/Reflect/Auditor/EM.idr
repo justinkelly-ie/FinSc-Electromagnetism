@@ -1,14 +1,14 @@
-module Reflect.Auditor.EM
+module Stage1.Reflect.Auditor.EM
 
 import public Language.Reflection
-import Core.BoxInt
-import Core.VexelMaxel
-import public EM.Potential
-import public EM.Calculus
-import public EM.Gauge
-import public EM.Flux
-import public EM.Hodge
-import public EM.Maxwell
+import Stage0.BoxInt
+import Stage1.VexelMaxel
+import public Stage0.Potential
+import public Stage1.EM.Calculus
+import public Stage1.EM.Gauge
+import public Stage0.Flux
+import public Stage1.EM.Hodge
+import public Stage1.EM.Maxwell
 
 %default total
 

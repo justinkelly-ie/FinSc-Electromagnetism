@@ -1,14 +1,14 @@
-module EM.FieldStream
+module Stage0.FieldStream
 
 import Data.List
 import Data.Fuel
-import Math.OnSeq.FusedStream
-import Math.Singleton.Bit
-import EM.Maxwell
-import EM.Calculus
-import Core.VexelMaxel
-import Core.BoxInt
-import public Geometry.GrassmannCalculus
+import Stage0.OnSeq.FusedStream
+import Stage0.Singleton.Bit
+import Stage1.EM.Maxwell
+import Stage1.EM.Calculus
+import Stage1.VexelMaxel
+import Stage0.BoxInt
+import public Stage1.GrassmannCalculus
 
 %default total
 
@@ -21,49 +21,68 @@ public export
 streamMaxwellStates : List MaxwellState -> FusedStream MaxwellState
 streamMaxwellStates = stream
 
-||| Deforested Poynting flux stream computation S = E x B over a sequence of states.
-public export
-fusedPoyntingStream : FusedStream MaxwellState -> FusedStream Core.VexelMaxel.Maxel
-fusedPoyntingStream = mapStream (\st => computePoyntingVector (maxwellElectricField st) (maxwellMagneticField st))
-
-||| Poynting flux stream transducer S = E x B.
-public export
-poyntingTransducer : StreamTransducer MaxwellState Core.VexelMaxel.Maxel
-poyntingTransducer = MkTransducer (\(), st => Yield (computePoyntingVector (maxwellElectricField st) (maxwellMagneticField st)) ()) ()
-
-||| Deforested electric field extraction from Maxwell states.
-public export
-fusedElectricStream : FusedStream MaxwellState -> FusedStream EdgeCochain
-fusedElectricStream = mapStream maxwellElectricField
-
-||| Electric field stream transducer.
+||| Electric field stream transducer extracting EdgeCochain from MaxwellState.
 public export
 electricTransducer : StreamTransducer MaxwellState EdgeCochain
 electricTransducer = MkTransducer (\(), st => Yield (maxwellElectricField st) ()) ()
 
-||| Deforested magnetic field extraction from Maxwell states.
-public export
-fusedMagneticStream : FusedStream MaxwellState -> FusedStream FaceCochain
-fusedMagneticStream = mapStream maxwellMagneticField
-
-||| Magnetic field stream transducer.
+||| Magnetic field stream transducer extracting FaceCochain from MaxwellState.
 public export
 magneticTransducer : StreamTransducer MaxwellState FaceCochain
 magneticTransducer = MkTransducer (\(), st => Yield (maxwellMagneticField st) ()) ()
+
+||| Poynting flux stream transducer computing S = E x B from MaxwellState.
+public export
+poyntingTransducer : StreamTransducer MaxwellState Stage1.VexelMaxel.Maxel
+poyntingTransducer = MkTransducer (\(), st => Yield (computePoyntingVector (maxwellElectricField st) (maxwellMagneticField st)) ()) ()
+
+||| Single-pass deforested electric field extraction pipelined over Maxwell state streams.
+%inline public export
+streamElectricField : FusedStream MaxwellState -> FusedStream EdgeCochain
+streamElectricField strm = transduceStream electricTransducer strm
+
+||| Single-pass deforested magnetic field extraction pipelined over Maxwell state streams.
+%inline public export
+streamMagneticField : FusedStream MaxwellState -> FusedStream FaceCochain
+streamMagneticField strm = transduceStream magneticTransducer strm
+
+||| Single-pass deforested Poynting vector flux extraction pipelined over Maxwell state streams.
+%inline public export
+streamPoyntingVector : FusedStream MaxwellState -> FusedStream Stage1.VexelMaxel.Maxel
+streamPoyntingVector strm = transduceStream poyntingTransducer strm
+
+||| Deforested Poynting flux stream computation S = E x B over a sequence of states.
+public export
+fusedPoyntingStream : FusedStream MaxwellState -> FusedStream Stage1.VexelMaxel.Maxel
+fusedPoyntingStream = streamPoyntingVector
+
+||| Deforested electric field extraction from Maxwell states.
+public export
+fusedElectricStream : FusedStream MaxwellState -> FusedStream EdgeCochain
+fusedElectricStream = streamElectricField
+
+||| Deforested magnetic field extraction from Maxwell states.
+public export
+fusedMagneticStream : FusedStream MaxwellState -> FusedStream FaceCochain
+fusedMagneticStream = streamMagneticField
 
 ||| Evaluates a Maxwell state stream into a List container.
 public export
 runMaxwellStream : Fuel -> FusedStream MaxwellState -> List MaxwellState
 runMaxwellStream = runFueledStream
 
-||| Accumulates discrete Poynting flux total energy across a stream of Maxwell states without intermediate list allocations.
+||| Accumulates discrete Poynting flux total energy across a stream of Maxwell states using canonical Maxel multiset addition.
 public export covering
-fusedPoyntingAccumulate : FusedStream MaxwellState -> Core.VexelMaxel.Maxel
+fusedPoyntingAccumulate : FusedStream MaxwellState -> Stage1.VexelMaxel.Maxel
 fusedPoyntingAccumulate strm =
-  foldStream addMaxel (MkMaxel []) (fusedPoyntingStream strm)
-  where
-    addMaxel : Core.VexelMaxel.Maxel -> Core.VexelMaxel.Maxel -> Core.VexelMaxel.Maxel
-    addMaxel (MkMaxel xs) (MkMaxel ys) = MkMaxel (xs ++ ys)
+  foldStream (\acc, m => canonicalizeMaxel (Stage1.VexelMaxel.addMaxel acc m)) (MkMaxel []) (fusedPoyntingStream strm)
+
+||| Accumulates total integer Poynting energy frequency quanta directly into a BoxInt scalar without list concatenations.
+public export covering
+fusedPoyntingEnergyAccumulate : FusedStream MaxwellState -> BoxInt
+fusedPoyntingEnergyAccumulate strm =
+  foldStream (\acc, m => acc + totalMaxelWeight m) (intToBoxInt 0) (fusedPoyntingStream strm)
+
 
 ------------------------------------------------------------------------
 -- 2. DEFORESTED PHOTON STATE STREAM TRANSDUCERS (O(1) ALLOCATION)

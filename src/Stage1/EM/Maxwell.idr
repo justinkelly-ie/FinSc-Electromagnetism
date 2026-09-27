@@ -1,14 +1,14 @@
-module EM.Maxwell
+module Stage1.EM.Maxwell
 
-import Core.BoxInt
-import Core.Order.Preorder
-import public Core.VexelMaxel
-import Geometry.GrassmannCalculus
-import EM.Potential
-import EM.Calculus
-import EM.Gauge
-import EM.Flux
-import EM.Hodge
+import Stage0.BoxInt
+import Stage1.Order.Preorder
+import public Stage1.VexelMaxel
+import Stage1.GrassmannCalculus
+import Stage0.Potential
+import Stage1.EM.Calculus
+import Stage1.EM.Gauge
+import Stage0.Flux
+import Stage1.EM.Hodge
 import Data.List
 import Data.Vect
 

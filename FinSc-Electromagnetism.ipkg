@@ -7,13 +7,12 @@ depends = FinSc-Geometry, FinSc-Multiset-Core, FinSc-Multiset-Transform, base, l
 sourcedir = "src"
 
 modules = Electromagnetism,
-          EM.Calculus,
-          EM.EMScaleTransforms,
-          EM.FieldStream,
-          EM.Flux,
-          EM.Gauge,
-          EM.Hodge,
-          EM.Maxwell,
-          EM.Potential,
-          Reflect.Auditor.EM
-
+          Stage0.FieldStream,
+          Stage0.Potential,
+          Stage0.Flux,
+          Stage1.EM.Calculus,
+          Stage1.EM.EMScaleTransforms,
+          Stage1.EM.Gauge,
+          Stage1.EM.Hodge,
+          Stage1.EM.Maxwell,
+          Stage1.Reflect.Auditor.EM

@@ -38,20 +38,10 @@ type = "local"
 path = "../FinSc-Multiset-Ternary"
 ipkg = "FinSc-Multiset-Ternary.ipkg"
 
-[custom.all.FinSc-GeoLinAlg]
-type = "local"
-path = "../Review/FinSc-GeoLinAlg"
-ipkg = "FinSc-GeoLinAlg.ipkg"
-
 [custom.all.FinSc-Dihedron]
 type = "local"
 path = "../FinSc-Dihedron"
 ipkg = "FinSc-Dihedron.ipkg"
-
-[custom.all.idris2-Dihedron]
-type = "local"
-path = "../FinSc-Dihedron"
-ipkg = "idris2-Dihedron.ipkg"
 
 [custom.all.idris2-QuickCheck]
 type = "local"

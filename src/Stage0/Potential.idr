@@ -1,8 +1,8 @@
-module EM.Potential
+module Stage0.Potential
 
-import Core.BoxInt
-import Core.VexelMaxel
-import public Geometry.GrassmannCalculus
+import Stage0.BoxInt
+import Stage1.VexelMaxel
+import public Stage1.GrassmannCalculus
 import Data.List
 
 %default total

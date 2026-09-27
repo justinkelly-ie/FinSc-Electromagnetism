@@ -1,10 +1,10 @@
-module EM.Hodge
+module Stage1.EM.Hodge
 
-import Core.BoxInt
-import Core.VexelMaxel
-import public Geometry.GrassmannCalculus
-import EM.Potential
-import EM.Calculus
+import Stage0.BoxInt
+import Stage1.VexelMaxel
+import public Stage1.GrassmannCalculus
+import Stage0.Potential
+import Stage1.EM.Calculus
 import Data.List
 
 %default total

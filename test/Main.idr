@@ -2,10 +2,10 @@ module Main
 
 import QuickCheck
 import Data.List
-import Math.Multiset
-import Math.BoxInt
-import Math.Pixel
-import Math.Interfaces
+import Stage0.Multiset
+import Stage0.BoxInt
+import Stage0.Pixel
+import Stage0.Interfaces
 import Substrate.Core
 import Substrate.Difference
 import Substrate.Divergence

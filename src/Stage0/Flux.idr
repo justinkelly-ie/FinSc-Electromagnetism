@@ -1,11 +1,11 @@
-module EM.Flux
+module Stage0.Flux
 
-import Core.BoxInt
-import Core.VexelMaxel
-import Math.Multiset
-import Geometry.GrassmannCalculus
-import EM.Potential
-import EM.Calculus
+import Stage0.BoxInt
+import Stage1.VexelMaxel
+import Stage0.Multiset
+import Stage1.GrassmannCalculus
+import Stage0.Potential
+import Stage1.EM.Calculus
 import Data.List
 import Data.Vect
 

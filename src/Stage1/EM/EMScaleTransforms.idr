@@ -3,7 +3,7 @@ module Stage1.EM.EMScaleTransforms
 import Stage0.Multiset
 import Stage0.WitnessLedger
 import Stage1.QuadStream
-import Stage1.Category.Adjunction
+import Stage1.MultisetDuality
 import Stage1.TypeTheory.Staging
 import Stage1.TypeTheory.TwoLevel
 
@@ -139,8 +139,9 @@ StrictReflectionFunctor ConcreteEMFunctor AbstractEMFunctor where
 
 ||| QTT 0 Erased Proof: Electromagnetic Scale Multiset Adjunction Duality Invariant
 public export
-0 prfEMScaleAdjunctionDuality : (n : BoxInt) -> n = n
-prfEMScaleAdjunctionDuality = prfMultisetDuality
+0 prfEMScaleAdjunctionDuality : (t : MultisetTensor (ConcreteEMFunctor Nat) Nat) ->
+                                emHomTensorInv (emHomTensorIso t) = t
+prfEMScaleAdjunctionDuality = proofEMHomIso
 
 ||| Proof witness exporter for EM ScaleTransform Plugin
 public export

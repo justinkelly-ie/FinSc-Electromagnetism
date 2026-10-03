@@ -2,6 +2,7 @@ module Stage1.EM.Calculus
 
 import Stage0.BoxInt
 import Stage1.VexelMaxel
+import public Stage1.Topology.Boundaries
 import public Stage1.GrassmannCalculus
 import Stage0.Potential
 import Data.List
@@ -20,6 +21,15 @@ computeElectricField : List (Unixel, Unixel) -> ElectricPotential -> EdgeCochain
 computeElectricField edges phi =
   let gradPhi = grassmannCoboundary0 edges phi
   in scaleMaxel (intToBoxInt (-1)) gradPhi
+
+||| Computes electrostatic field E = -d₀(Φ) natively over Pixel edges via pure multiset coboundary.
+public export
+computeElectricFieldMultiset : List Pixel -> ElectricPotential -> EdgeCochain
+computeElectricFieldMultiset edges phi =
+  let mPhi = vexelToMultiset phi
+      mGrad = multisetCoboundary0To1 edges mPhi
+      eField = multisetToMaxel mGrad
+  in scaleMaxel (intToBoxInt (-1)) eField
 
 ||| Computes the magnetic flux 2-form B = d1(A) over directed face pixels.
 %inline
@@ -45,6 +55,14 @@ computePoissonLaplacian edges phi =
       flatTerms = concat divergenceTerms
       grouped = map (\(n, w) => (MkUnixel n, w)) flatTerms
   in canonicalizeVexel (MkVexel grouped)
+
+||| Computes discrete Poisson-Laplacian Δ(Φ) = ∂₁ (d₀ Φ) natively via pure multiset Dirac cancellation.
+public export
+computePoissonLaplacianMultiset : List Pixel -> ElectricPotential -> Vexel
+computePoissonLaplacianMultiset edges phi =
+  let mPhi = vexelToMultiset phi
+      mLap = multisetLaplacian0 edges mPhi
+  in multisetToVexel mLap
 
 ------------------------------------------------------------------------
 -- 2. DISCRETE CALCULUS CONSERVATION LAWS

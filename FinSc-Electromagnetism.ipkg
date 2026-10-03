@@ -1,9 +1,9 @@
 package FinSc-Electromagnetism
 version = 0.3.0
 authors = "Justin Kelly"
-brief   = "Layer 3c Constructive Discrete Electromagnetism & Gauge Field Engine."
+brief   = "Layer 4b Constructive Discrete Electromagnetism & Gauge Field Engine."
 
-depends = FinSc-Geometry, FinSc-Multiset-Core, FinSc-Multiset-Transform, base, linear
+depends = FinSc-Geometry, FinSc-Multiset, FinSc-Metric-Substrate, FinSc-Phase-Unfolding, base, linear
 sourcedir = "src"
 
 modules = Electromagnetism,

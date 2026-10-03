@@ -23,20 +23,20 @@ type = "local"
 path = "../FinSc-Multiset-Core"
 ipkg = "FinSc-Multiset-Core.ipkg"
 
-[custom.all.FinSc-Multiset-Transform]
+[custom.all.FinSc-Phase-Unfolding]
 type = "local"
-path = "../FinSc-Multiset-Transform"
-ipkg = "FinSc-Multiset-Transform.ipkg"
+path = "../FinSc-Phase-Unfolding"
+ipkg = "FinSc-Phase-Unfolding.ipkg"
 
-[custom.all.FinSc-Multiset-Binary]
+[custom.all.FinSc-Radix-Binary]
 type = "local"
-path = "../FinSc-Multiset-Binary"
-ipkg = "FinSc-Multiset-Binary.ipkg"
+path = "../FinSc-Radix-Binary"
+ipkg = "FinSc-Radix-Binary.ipkg"
 
-[custom.all.FinSc-Multiset-Ternary]
+[custom.all.FinSc-Radix-Ternary]
 type = "local"
-path = "../FinSc-Multiset-Ternary"
-ipkg = "FinSc-Multiset-Ternary.ipkg"
+path = "../FinSc-Radix-Ternary"
+ipkg = "FinSc-Radix-Ternary.ipkg"
 
 [custom.all.FinSc-Dihedron]
 type = "local"

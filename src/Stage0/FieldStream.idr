@@ -118,11 +118,17 @@ fusedPhotonStateStream : FusedStream PhotonStateToken -> FusedStream PhotonState
 fusedPhotonStateStream strm =
   mapStream (\tok => MkPhotonToken (tok.polarization) (tok.frequency + intToBoxInt 1)) strm
 
+||| Evaluates total photon stream energy directly across a PhotonStateToken stream using a fueled fold.
+public export
+fusedComputePhotonStreamEnergyDirect : Fuel -> FusedStream PhotonStateToken -> BoxInt
+fusedComputePhotonStreamEnergyDirect f strm =
+  foldStreamFuel f (\acc, tok => addBox (frequency tok) acc) (intToBoxInt 0) strm
+
 ||| Evaluates total photon stream energy using a fueled fold.
 public export
 fusedComputePhotonStreamEnergy : Fuel -> List (Bit, BoxInt) -> BoxInt
 fusedComputePhotonStreamEnergy f items =
-  foldStreamFuel f (\acc, tok => frequency tok + acc) (intToBoxInt 0) (unfoldPhotonStream items)
+  fusedComputePhotonStreamEnergyDirect f (unfoldPhotonStream items)
 
 ||| Audit witness verifying zero-allocation deforested photon stream energy calculation.
 public export

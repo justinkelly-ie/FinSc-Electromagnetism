@@ -3,6 +3,7 @@ module Electromagnetism
 import public Stage0.FieldStream
 import public Stage0.Potential
 import public Stage0.Flux
+import public Stage0.TransferMatrix
 
 import public Stage1.EM.Calculus
 import public Stage1.EM.EMScaleTransforms

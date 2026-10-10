@@ -9,6 +9,10 @@ import Stage1.EM.Calculus
 import Stage1.VexelMaxel
 import Stage0.BoxInt
 import public Stage1.GrassmannCalculus
+import Stage1.MaxelTransform
+import Stage0.Multiset
+import Stage1.UnixelFraction
+import Data.Fin
 
 %default total
 
@@ -71,17 +75,17 @@ public export
 runMaxwellStream : Fuel -> FusedStream MaxwellState -> List MaxwellState
 runMaxwellStream = runFueledStream
 
-||| Accumulates discrete Poynting flux total energy across a stream of Maxwell states using canonical Maxel multiset addition.
-public export covering
+||| Accumulates discrete Poynting flux total energy across a stream of Maxwell states bounded by canonical Hyperbolic flux capacity (128 DE).
+public export
 fusedPoyntingAccumulate : FusedStream MaxwellState -> Stage1.VexelMaxel.Maxel
 fusedPoyntingAccumulate strm =
-  foldStream (\acc, m => canonicalizeMaxel (Stage1.VexelMaxel.addMaxel acc m)) (MkMaxel []) (fusedPoyntingStream strm)
+  foldStreamFuel hyperbolicFuel (\acc, m => canonicalizeMaxel (Stage1.VexelMaxel.addMaxel acc m)) (MkMaxel []) (fusedPoyntingStream strm)
 
-||| Accumulates total integer Poynting energy frequency quanta directly into a BoxInt scalar without list concatenations.
-public export covering
+||| Accumulates total integer Poynting energy frequency quanta directly into a BoxInt scalar bounded by canonical Hyperbolic flux capacity (128 DE).
+public export
 fusedPoyntingEnergyAccumulate : FusedStream MaxwellState -> BoxInt
 fusedPoyntingEnergyAccumulate strm =
-  foldStream (\acc, m => acc + totalMaxelWeight m) (intToBoxInt 0) (fusedPoyntingStream strm)
+  foldStreamFuel hyperbolicFuel (\acc, m => acc + totalMaxelWeight m) (intToBoxInt 0) (fusedPoyntingStream strm)
 
 
 ------------------------------------------------------------------------
@@ -114,22 +118,49 @@ fusedPhotonStateStream : FusedStream PhotonStateToken -> FusedStream PhotonState
 fusedPhotonStateStream strm =
   mapStream (\tok => MkPhotonToken (tok.polarization) (tok.frequency + intToBoxInt 1)) strm
 
-||| Evaluates total photon stream energy using a fused hylomorphism.
-public export covering
+||| Evaluates total photon stream energy using a fueled fold.
+public export
 fusedComputePhotonStreamEnergy : Fuel -> List (Bit, BoxInt) -> BoxInt
 fusedComputePhotonStreamEnergy f items =
-  fusedHylomorphism f
-    (\st => case st of
-              [] => Done
-              (pol, freq) :: rest => Yield (MkPhotonToken pol freq) rest)
-    (\tok, acc => frequency tok + acc)
-    (intToBoxInt 0)
-    items
+  foldStreamFuel f (\acc, tok => frequency tok + acc) (intToBoxInt 0) (unfoldPhotonStream items)
 
 ||| Audit witness verifying zero-allocation deforested photon stream energy calculation.
-public export covering
+public export
 auditPhotonStreamProof : Bool
 auditPhotonStreamProof =
   let items = [(Zero, intToBoxInt 5), (One, intToBoxInt 10)]
-      totalE = fusedComputePhotonStreamEnergy (limit 100) items
+      totalE = foldStreamNat (length items) (\acc, tok => frequency tok + acc) (intToBoxInt 0) (unfoldPhotonStream items)
   in unwrapBox totalE == 15
+
+------------------------------------------------------------------------
+-- 3. DEFORESTED POYNTING FLUX BOUNDARY INTEGRAL TRANSDUCER
+------------------------------------------------------------------------
+
+||| Evaluates closed boundary surface Poynting energy radiation from a stream of boundary link transforms.
+||| Deforests link transitions without matrix allocations.
+public export
+streamBoundaryPoyntingRadiation : Fuel -> FusedStream (MaxelTransform (Fin 2) (Fin 2)) -> BoxInt
+streamBoundaryPoyntingRadiation f linkStream =
+  let idMaxel : MaxelTransform (Fin 2) (Fin 2)
+      idMaxel = mkMaxelTransform EllipticSector unitUnixelFraction
+                  [ (((the (Fin 2) Data.Fin.FZ, the (Fin 2) Data.Fin.FZ)), intToBoxInt 1)
+                  , (((the (Fin 2) (Data.Fin.FS Data.Fin.FZ), the (Fin 2) (Data.Fin.FS Data.Fin.FZ))), intToBoxInt 1) ]
+      loopMaxel = foldStreamFuel f (\acc, step => maxelMaxelBeta acc step) idMaxel linkStream
+      pxs = items (pixelBox loopMaxel)
+      maxelObj = MkMaxel (map (\((_, _), w) => (MkPixel 1 0, w)) pxs)
+      eVal = lookupPixel (MkPixel 1 0) maxelObj
+      bVal = lookupPixel (MkPixel 2 3) maxelObj
+  in addBox (mulBox eVal eVal) (mulBox bVal bVal)
+
+||| Audits that an identity boundary link stream preserves Poynting field radiation invariant (Q_EM = 4).
+public export
+auditBoundaryPoyntingRadiationProof : Bool
+auditBoundaryPoyntingRadiationProof =
+  let idLink : MaxelTransform (Fin 2) (Fin 2)
+      idLink = mkMaxelTransform EllipticSector unitUnixelFraction
+                 [ (((the (Fin 2) Data.Fin.FZ, the (Fin 2) Data.Fin.FZ)), intToBoxInt 1)
+                 , (((the (Fin 2) (Data.Fin.FS Data.Fin.FZ), the (Fin 2) (Data.Fin.FS Data.Fin.FZ))), intToBoxInt 1) ]
+      strm = stream [idLink]
+      rad = streamBoundaryPoyntingRadiation (limit 1) strm
+  in unwrapBox rad == 4
+

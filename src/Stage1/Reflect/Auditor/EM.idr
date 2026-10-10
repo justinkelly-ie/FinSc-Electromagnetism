@@ -36,6 +36,10 @@ public export
 auditEMVacuumMaxwellProofExport : Bool
 auditEMVacuumMaxwellProofExport = auditMaxwellVacuumSolenoidProof
 
+public export
+auditEMDecNilpotencyProofExport : Bool
+auditEMDecNilpotencyProofExport = auditDecNilpotencyEMProof
+
 ------------------------------------------------------------------------
 -- 2. ELABORATOR REFLECTION MACROS (RULE 01)
 ------------------------------------------------------------------------
@@ -46,3 +50,9 @@ public export
 auditEMInvariant : (prop : Bool) -> Elab (prop = True)
 auditEMInvariant True = pure Refl
 auditEMInvariant False = fail "Compile-time EM invariant audit failed!"
+
+||| Macro verifying DEC coboundary nilpotency (d² = 0) at compile time.
+public export
+%macro
+auditEMDecNilpotency : Elab (Stage1.Reflect.Auditor.EM.auditEMDecNilpotencyProofExport = True)
+auditEMDecNilpotency = pure Refl

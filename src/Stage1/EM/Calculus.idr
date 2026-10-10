@@ -14,14 +14,6 @@ import Data.Vect
 -- 1. DISCRETE ELECTROMAGNETIC CALCULUS OPERATORS
 ------------------------------------------------------------------------
 
-||| Computes the electrostatic field 1-form E = -d0(Phi) over directed edge pixels.
-%inline
-public export
-computeElectricField : List (Unixel, Unixel) -> ElectricPotential -> EdgeCochain
-computeElectricField edges phi =
-  let gradPhi = grassmannCoboundary0 edges phi
-  in scaleMaxel (intToBoxInt (-1)) gradPhi
-
 ||| Computes electrostatic field E = -d₀(Φ) natively over Pixel edges via pure multiset coboundary.
 public export
 computeElectricFieldMultiset : List Pixel -> ElectricPotential -> EdgeCochain
@@ -30,6 +22,14 @@ computeElectricFieldMultiset edges phi =
       mGrad = multisetCoboundary0To1 edges mPhi
       eField = multisetToMaxel mGrad
   in scaleMaxel (intToBoxInt (-1)) eField
+
+||| Computes the electrostatic field 1-form E = -d0(Phi) over directed edge pixels.
+%inline
+public export
+computeElectricField : List (Unixel, Unixel) -> ElectricPotential -> EdgeCochain
+computeElectricField edges phi =
+  let pxEdges = map (\(u, v) => MkPixel (index u) (index v)) edges
+  in computeElectricFieldMultiset pxEdges phi
 
 ||| Computes the magnetic flux 2-form B = d1(A) over directed face pixels.
 %inline
@@ -43,19 +43,6 @@ public export
 computeChargeDivergence : List (Voxel, Vect 6 (Pixel, BoxInt)) -> FaceCochain -> CellCochain
 computeChargeDivergence voxels f = grassmannCoboundary2 voxels f
 
-||| Computes the discrete Poisson-Laplacian Delta(Phi) = d0* d0(Phi) over vertex singletons.
-%inline
-public export
-computePoissonLaplacian : List (Unixel, Unixel) -> ElectricPotential -> Vexel
-computePoissonLaplacian edges phi =
-  let eField = computeElectricField edges phi
-      divergenceTerms = map (\(u@(MkUnixel uIdx), v@(MkUnixel vIdx)) =>
-                              let eVal = lookupEdge (u, v) eField
-                              in [(uIdx, -eVal), (vIdx, eVal)]) edges
-      flatTerms = concat divergenceTerms
-      grouped = map (\(n, w) => (MkUnixel n, w)) flatTerms
-  in canonicalizeVexel (MkVexel grouped)
-
 ||| Computes discrete Poisson-Laplacian Δ(Φ) = ∂₁ (d₀ Φ) natively via pure multiset Dirac cancellation.
 public export
 computePoissonLaplacianMultiset : List Pixel -> ElectricPotential -> Vexel
@@ -63,6 +50,14 @@ computePoissonLaplacianMultiset edges phi =
   let mPhi = vexelToMultiset phi
       mLap = multisetLaplacian0 edges mPhi
   in multisetToVexel mLap
+
+||| Computes the discrete Poisson-Laplacian Delta(Phi) = d0* d0(Phi) over vertex singletons.
+%inline
+public export
+computePoissonLaplacian : List (Unixel, Unixel) -> ElectricPotential -> Vexel
+computePoissonLaplacian edges phi =
+  let pxEdges = map (\(u, v) => MkPixel (index u) (index v)) edges
+  in computePoissonLaplacianMultiset pxEdges phi
 
 ------------------------------------------------------------------------
 -- 2. DISCRETE CALCULUS CONSERVATION LAWS
@@ -76,3 +71,8 @@ auditConstantPotentialZeroFieldProof =
       phi = MkVexel [(MkUnixel 1, intToBoxInt 10), (MkUnixel 2, intToBoxInt 10), (MkUnixel 3, intToBoxInt 10)]
       eField = computeElectricField edges phi
   in eField == MkMaxel []
+
+||| Static verification witness: DEC coboundary nilpotency (d² = 0 / Stokes' Theorem).
+public export
+auditDecNilpotencyEMProof : Bool
+auditDecNilpotencyEMProof = auditDecNilpotencyProofExport

@@ -5,6 +5,8 @@ import Stage1.VexelMaxel
 import public Stage1.Topology.Boundaries
 import public Stage1.GrassmannCalculus
 import Stage0.Potential
+import Stage0.OnSeq.FusedStream as FS
+import Stage1.VexelStream
 import Data.List
 import Data.Vect
 
@@ -59,6 +61,29 @@ computePoissonLaplacian edges phi =
   let pxEdges = map (\(u, v) => MkPixel (index u) (index v)) edges
   in computePoissonLaplacianMultiset pxEdges phi
 
+||| Computes electrostatic field E = -d₀(Φ) natively over an edge stream without intermediate List allocations.
+public export
+computeElectricFieldStream : FusedStream Pixel -> ElectricPotential -> FusedStream (Pixel, BoxInt)
+computeElectricFieldStream edges phi =
+  let mPhi = vexelToMultiset phi
+      gradStream = streamCoboundary0To1 edges mPhi
+  in mapStream (\(p, w) => (p, mulBox (intToBoxInt (-1)) w)) gradStream
+
+||| Computes electrostatic field directly from the active geometric support of a Maxel in O(1) auxiliary registers.
+public export
+computeElectricFieldFromMaxel : Stage1.VexelMaxel.Maxel -> ElectricPotential -> FusedStream (Pixel, BoxInt)
+computeElectricFieldFromMaxel m phi =
+  computeElectricFieldStream (supportMaxelStream (streamMaxel m)) phi
+
+
+||| Computes discrete Poisson-Laplacian Δ(Φ) = ∂₁ (d₀ Φ) directly over an edge stream in a single-pass fold.
+public export
+computePoissonLaplacianStream : Fuel -> FusedStream Pixel -> ElectricPotential -> Vexel
+computePoissonLaplacianStream f edges phi =
+  let mPhi = vexelToMultiset phi
+      mLap = streamLaplacian0Fuel f edges mPhi
+  in multisetToVexel mLap
+
 ------------------------------------------------------------------------
 -- 2. DISCRETE CALCULUS CONSERVATION LAWS
 ------------------------------------------------------------------------
@@ -76,3 +101,17 @@ auditConstantPotentialZeroFieldProof =
 public export
 auditDecNilpotencyEMProof : Bool
 auditDecNilpotencyEMProof = auditDecNilpotencyProofExport
+
+||| Static verification witness: Deforested electric field stream matches multiset coboundary field.
+public export
+auditElectricFieldStreamEquivalenceProof : Bool
+auditElectricFieldStreamEquivalenceProof =
+  let edges = [MkPixel 1 2, MkPixel 2 3]
+      phi = MkVexel [(MkUnixel 1, intToBoxInt 10), (MkUnixel 2, intToBoxInt 25), (MkUnixel 3, intToBoxInt 40)]
+      eFieldMultiset = computeElectricFieldMultiset edges phi
+      eFieldStrm = computeElectricFieldStream (stream edges) phi
+      eFieldFromStrm = multisetToMaxel (foldStreamCoboundaryToMultiset (limit 10) eFieldStrm)
+  in (lookupPixel (MkPixel 1 2) eFieldMultiset == lookupPixel (MkPixel 1 2) eFieldFromStrm) &&
+     (lookupPixel (MkPixel 2 3) eFieldMultiset == lookupPixel (MkPixel 2 3) eFieldFromStrm)
+
+

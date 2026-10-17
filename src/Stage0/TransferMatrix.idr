@@ -3,6 +3,7 @@ module Stage0.TransferMatrix
 import Stage0.BoxInt
 import Stage1.UnixelFraction
 import Stage0.OnSeq.FusedStream
+import Stage0.StructuralFuel
 import Data.Fuel
 import Data.List
 
@@ -93,11 +94,17 @@ streamTransferMatrices layers =
     (stream layers)
 
 ||| Deforested accumulation of total stack transfer matrix: M_total = prod_i M_i
-||| Executes in O(1) auxiliary space using stream left fold.
+||| Executes in O(1) auxiliary space using stream left fold with total structural Nat fuel.
 public export
-fusedStackTransferMatrix : Fuel -> List DielectricLayer -> TransferMatrix2x2
-fusedStackTransferMatrix f layers =
-  foldStreamFuel f mulTM2x2 idTM2x2 (streamTransferMatrices layers)
+fusedStackTransferMatrixNat : Nat -> List DielectricLayer -> TransferMatrix2x2
+fusedStackTransferMatrixNat fuel layers =
+  foldStreamNat fuel mulTM2x2 idTM2x2 (streamTransferMatrices layers)
+
+||| Deforested accumulation of total stack transfer matrix using model-indexed GohFuel.
+public export
+fusedStackTransferMatrixFuelModel : GohFuel cap -> List DielectricLayer -> TransferMatrix2x2
+fusedStackTransferMatrixFuelModel fuel layers =
+  fusedStackTransferMatrixNat (gohSteps fuel) layers
 
 ------------------------------------------------------------------------
 -- 4. POYNTING FLUX CONSERVATION ACROSS DIELECTRIC BOUNDARIES
@@ -130,6 +137,6 @@ auditPhotonicTransferMatrixProof =
       tDet12 = auditDielectricInterfaceDeterminant (intToBoxInt 1) (intToBoxInt 2)
       layer1 = MkDielectricLayer 1 (intToBoxInt 2) (intToBoxInt 1)
       layer2 = MkDielectricLayer 2 (intToBoxInt 3) (intToBoxInt 2)
-      mTot = fusedStackTransferMatrix (limit 5) [layer1, layer2]
+      mTot = fusedStackTransferMatrixFuelModel (gohFuelForCapacity 2) [layer1, layer2]
       detTot = detTM2x2 mTot
   in boxEq detId (intToBoxInt 1) && tDet12 && (unwrapBox detTot > 0)

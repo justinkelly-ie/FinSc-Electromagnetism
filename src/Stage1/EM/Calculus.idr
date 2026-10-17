@@ -6,6 +6,7 @@ import public Stage1.Topology.Boundaries
 import public Stage1.GrassmannCalculus
 import Stage0.Potential
 import Stage0.OnSeq.FusedStream as FS
+import Stage0.StructuralFuel
 import Stage1.VexelStream
 import Data.List
 import Data.Vect
@@ -110,7 +111,7 @@ auditElectricFieldStreamEquivalenceProof =
       phi = MkVexel [(MkUnixel 1, intToBoxInt 10), (MkUnixel 2, intToBoxInt 25), (MkUnixel 3, intToBoxInt 40)]
       eFieldMultiset = computeElectricFieldMultiset edges phi
       eFieldStrm = computeElectricFieldStream (stream edges) phi
-      eFieldFromStrm = multisetToMaxel (foldStreamCoboundaryToMultiset (limit 10) eFieldStrm)
+      eFieldFromStrm = multisetToMaxel (foldStreamCoboundaryToMultisetFuelModel hyperbolicGohFuelModel eFieldStrm)
   in (lookupPixel (MkPixel 1 2) eFieldMultiset == lookupPixel (MkPixel 1 2) eFieldFromStrm) &&
      (lookupPixel (MkPixel 2 3) eFieldMultiset == lookupPixel (MkPixel 2 3) eFieldFromStrm)
 

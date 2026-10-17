@@ -145,6 +145,20 @@ auditPhotonStreamProof =
 ||| Evaluates closed boundary surface Poynting energy radiation from a stream of boundary link transforms.
 ||| Deforests link transitions without matrix allocations.
 public export
+streamBoundaryPoyntingRadiationNat : Nat -> FusedStream (MaxelTransform (Fin 2) (Fin 2)) -> BoxInt
+streamBoundaryPoyntingRadiationNat fuelSteps linkStream =
+  let idMaxel : MaxelTransform (Fin 2) (Fin 2)
+      idMaxel = mkMaxelTransform EllipticSector unitUnixelFraction
+                  [ (((the (Fin 2) Data.Fin.FZ, the (Fin 2) Data.Fin.FZ)), intToBoxInt 1)
+                  , (((the (Fin 2) (Data.Fin.FS Data.Fin.FZ), the (Fin 2) (Data.Fin.FS Data.Fin.FZ))), intToBoxInt 1) ]
+      loopMaxel = foldStreamNat fuelSteps (\acc, step => maxelMaxelBeta acc step) idMaxel linkStream
+      pxs = items (pixelBox loopMaxel)
+      maxelObj = MkMaxel (map (\((_, _), w) => (MkPixel 1 0, w)) pxs)
+      eVal = lookupPixel (MkPixel 1 0) maxelObj
+      bVal = lookupPixel (MkPixel 2 3) maxelObj
+  in addBox (mulBox eVal eVal) (mulBox bVal bVal)
+
+public export
 streamBoundaryPoyntingRadiation : Fuel -> FusedStream (MaxelTransform (Fin 2) (Fin 2)) -> BoxInt
 streamBoundaryPoyntingRadiation f linkStream =
   let idMaxel : MaxelTransform (Fin 2) (Fin 2)
@@ -167,6 +181,6 @@ auditBoundaryPoyntingRadiationProof =
                  [ (((the (Fin 2) Data.Fin.FZ, the (Fin 2) Data.Fin.FZ)), intToBoxInt 1)
                  , (((the (Fin 2) (Data.Fin.FS Data.Fin.FZ), the (Fin 2) (Data.Fin.FS Data.Fin.FZ))), intToBoxInt 1) ]
       strm = stream [idLink]
-      rad = streamBoundaryPoyntingRadiation (limit 1) strm
+      rad = streamBoundaryPoyntingRadiationNat 1 strm
   in unwrapBox rad == 4
 

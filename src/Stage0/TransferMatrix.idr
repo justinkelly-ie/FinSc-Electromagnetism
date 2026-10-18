@@ -139,4 +139,4 @@ auditPhotonicTransferMatrixProof =
       layer2 = MkDielectricLayer 2 (intToBoxInt 3) (intToBoxInt 2)
       mTot = fusedStackTransferMatrixFuelModel (gohFuelForCapacity 2) [layer1, layer2]
       detTot = detTM2x2 mTot
-  in boxEq detId (intToBoxInt 1) && tDet12 && (unwrapBox detTot > 0)
+  in boxEq detId (intToBoxInt 1) && tDet12 && (detTot > intToBoxInt 0)

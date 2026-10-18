@@ -69,4 +69,4 @@ auditMultipolePolyProof =
       l1 = layerTransferDepPoly (intToBoxInt 1) (intToBoxInt 2) (intToBoxInt 1)
       l2 = layerTransferDepPoly (intToBoxInt 2) (intToBoxInt 3) (intToBoxInt 2)
       stack4 = twoLayerStackTransferDepPoly l1 l2
-  in boxEq val expected && unwrapBox (evalDepPolynumber stack4 u) > 0
+  in boxEq val expected && evalDepPolynumber stack4 u > intToBoxInt 0

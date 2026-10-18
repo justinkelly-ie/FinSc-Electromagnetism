@@ -136,7 +136,7 @@ auditPhotonStreamProof : Bool
 auditPhotonStreamProof =
   let items = [(Zero, intToBoxInt 5), (One, intToBoxInt 10)]
       totalE = foldStreamNat (length items) (\acc, tok => frequency tok + acc) (intToBoxInt 0) (unfoldPhotonStream items)
-  in unwrapBox totalE == 15
+  in totalE == intToBoxInt 15
 
 ------------------------------------------------------------------------
 -- 3. DEFORESTED POYNTING FLUX BOUNDARY INTEGRAL TRANSDUCER
@@ -182,5 +182,5 @@ auditBoundaryPoyntingRadiationProof =
                  , (((the (Fin 2) (Data.Fin.FS Data.Fin.FZ), the (Fin 2) (Data.Fin.FS Data.Fin.FZ))), intToBoxInt 1) ]
       strm = stream [idLink]
       rad = streamBoundaryPoyntingRadiationNat 1 strm
-  in unwrapBox rad == 4
+  in rad == intToBoxInt 4
 

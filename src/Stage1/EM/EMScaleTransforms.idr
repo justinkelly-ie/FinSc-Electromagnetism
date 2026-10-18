@@ -22,7 +22,7 @@ Eq ConcreteEMState where
 
 public export
 Show ConcreteEMState where
-  show (MkConcreteEM f) = "ConcreteEM(Flux=" ++ show (unwrapBox f) ++ ")"
+  show (MkConcreteEM f) = "ConcreteEM(Flux=" ++ show f ++ ")"
 
 ||| Maps QuadStreamMultiset to ConcreteEMState.
 public export
@@ -42,7 +42,7 @@ Eq EMMacroDomain where
 
 public export
 Show EMMacroDomain where
-  show (MkEMMacro e) = "EMMacro(Energy=" ++ show (unwrapBox e) ++ ")"
+  show (MkEMMacro e) = "EMMacro(Energy=" ++ show e ++ ")"
 
 ||| Maps QuadStreamMultiset to EMMacroDomain.
 public export

@@ -1,7 +1,8 @@
 module Stage0.Potential
 
 import Stage0.BoxInt
-import Stage1.VexelMaxel
+import Stage1.Carrier.Vexel
+import Stage1.Carrier.Maxel
 import public Stage1.GrassmannCalculus
 import Data.List
 

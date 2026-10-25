@@ -2,7 +2,10 @@ module Stage1.EM.Maxwell
 
 import Stage0.BoxInt
 import Stage1.Order.Preorder
-import public Stage1.VexelMaxel
+import public Stage1.Carrier.Maxel
+import public Stage1.Carrier.Boxel
+import public Stage1.Carrier.Vexel
+import public Stage1.Basis.Coordinate
 import Stage1.GrassmannCalculus
 import Stage0.Potential
 import Stage1.EM.Calculus

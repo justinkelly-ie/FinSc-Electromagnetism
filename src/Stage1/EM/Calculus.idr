@@ -1,7 +1,9 @@
 module Stage1.EM.Calculus
 
 import Stage0.BoxInt
-import Stage1.VexelMaxel
+import Stage1.Carrier.Vexel
+import Stage1.Carrier.Maxel
+import Stage1.Basis.Coordinate
 import public Stage1.Topology.Boundaries
 import public Stage1.GrassmannCalculus
 import Stage0.Potential
@@ -31,7 +33,7 @@ computeElectricFieldMultiset edges phi =
 public export
 computeElectricField : List (Unixel, Unixel) -> ElectricPotential -> EdgeCochain
 computeElectricField edges phi =
-  let pxEdges = map (\(u, v) => MkPixel (index u) (index v)) edges
+  let pxEdges = map (\(u, v) => mkPixel (unwrapUnixel u) (unwrapUnixel v)) edges
   in computeElectricFieldMultiset pxEdges phi
 
 ||| Computes the magnetic flux 2-form B = d1(A) over directed face pixels.
@@ -59,7 +61,7 @@ computePoissonLaplacianMultiset edges phi =
 public export
 computePoissonLaplacian : List (Unixel, Unixel) -> ElectricPotential -> Vexel
 computePoissonLaplacian edges phi =
-  let pxEdges = map (\(u, v) => MkPixel (index u) (index v)) edges
+  let pxEdges = map (\(u, v) => mkPixel (unwrapUnixel u) (unwrapUnixel v)) edges
   in computePoissonLaplacianMultiset pxEdges phi
 
 ||| Computes electrostatic field E = -d₀(Φ) natively over an edge stream without intermediate List allocations.
@@ -72,7 +74,7 @@ computeElectricFieldStream edges phi =
 
 ||| Computes electrostatic field directly from the active geometric support of a Maxel in O(1) auxiliary registers.
 public export
-computeElectricFieldFromMaxel : Stage1.VexelMaxel.Maxel -> ElectricPotential -> FusedStream (Pixel, BoxInt)
+computeElectricFieldFromMaxel : Maxel -> ElectricPotential -> FusedStream (Pixel, BoxInt)
 computeElectricFieldFromMaxel m phi =
   computeElectricFieldStream (supportMaxelStream (streamMaxel m)) phi
 

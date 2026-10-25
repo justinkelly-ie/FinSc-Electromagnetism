@@ -2,7 +2,6 @@ module Stage1.Reflect.Auditor.EM
 
 import public Language.Reflection
 import Stage0.BoxInt
-import Stage1.VexelMaxel
 import public Stage0.Potential
 import public Stage1.EM.Calculus
 import public Stage1.EM.Gauge

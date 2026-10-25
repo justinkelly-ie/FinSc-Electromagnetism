@@ -1,7 +1,9 @@
 module Stage0.Flux
 
 import Stage0.BoxInt
-import Stage1.VexelMaxel
+import Stage1.Carrier.Maxel
+import Stage1.Carrier.Boxel
+import Stage1.Basis.Coordinate
 import Stage0.Multiset
 import Stage1.GrassmannCalculus
 import Stage0.Potential

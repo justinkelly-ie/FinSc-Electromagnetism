@@ -6,7 +6,8 @@ import Stage0.OnSeq.FusedStream
 import Stage0.Singleton.Bit
 import Stage1.EM.Maxwell
 import Stage1.EM.Calculus
-import Stage1.VexelMaxel
+import Stage1.Carrier.Maxel
+import Stage1.Basis.Coordinate
 import Stage0.BoxInt
 import public Stage1.GrassmannCalculus
 import Stage1.MaxelTransform
@@ -37,7 +38,7 @@ magneticTransducer = MkTransducer (\(), st => Yield (maxwellMagneticField st) ()
 
 ||| Poynting flux stream transducer computing S = E x B from MaxwellState.
 public export
-poyntingTransducer : StreamTransducer MaxwellState Stage1.VexelMaxel.Maxel
+poyntingTransducer : StreamTransducer MaxwellState Maxel
 poyntingTransducer = MkTransducer (\(), st => Yield (computePoyntingVector (maxwellElectricField st) (maxwellMagneticField st)) ()) ()
 
 ||| Single-pass deforested electric field extraction pipelined over Maxwell state streams.
@@ -52,12 +53,12 @@ streamMagneticField strm = transduceStream magneticTransducer strm
 
 ||| Single-pass deforested Poynting vector flux extraction pipelined over Maxwell state streams.
 %inline public export
-streamPoyntingVector : FusedStream MaxwellState -> FusedStream Stage1.VexelMaxel.Maxel
+streamPoyntingVector : FusedStream MaxwellState -> FusedStream Maxel
 streamPoyntingVector strm = transduceStream poyntingTransducer strm
 
 ||| Deforested Poynting flux stream computation S = E x B over a sequence of states.
 public export
-fusedPoyntingStream : FusedStream MaxwellState -> FusedStream Stage1.VexelMaxel.Maxel
+fusedPoyntingStream : FusedStream MaxwellState -> FusedStream Maxel
 fusedPoyntingStream = streamPoyntingVector
 
 ||| Deforested electric field extraction from Maxwell states.
@@ -77,9 +78,9 @@ runMaxwellStream = runFueledStream
 
 ||| Accumulates discrete Poynting flux total energy across a stream of Maxwell states bounded by canonical Hyperbolic flux capacity (128 DE).
 public export
-fusedPoyntingAccumulate : FusedStream MaxwellState -> Stage1.VexelMaxel.Maxel
+fusedPoyntingAccumulate : FusedStream MaxwellState -> Maxel
 fusedPoyntingAccumulate strm =
-  foldStreamFuel hyperbolicFuel (\acc, m => canonicalizeMaxel (Stage1.VexelMaxel.addMaxel acc m)) (MkMaxel []) (fusedPoyntingStream strm)
+  foldStreamFuel hyperbolicFuel (\acc, m => canonicalizeMaxel (addMaxel acc m)) (MkMaxel []) (fusedPoyntingStream strm)
 
 ||| Accumulates total integer Poynting energy frequency quanta directly into a BoxInt scalar bounded by canonical Hyperbolic flux capacity (128 DE).
 public export

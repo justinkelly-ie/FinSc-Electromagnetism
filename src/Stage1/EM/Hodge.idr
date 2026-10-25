@@ -1,7 +1,7 @@
 module Stage1.EM.Hodge
 
 import Stage0.BoxInt
-import Stage1.VexelMaxel
+import Stage1.Carrier.Maxel
 import public Stage1.GrassmannCalculus
 import Stage0.Potential
 import Stage1.EM.Calculus

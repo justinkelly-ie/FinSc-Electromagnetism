@@ -23,10 +23,15 @@ import Data.Vect
 public export
 computeElectricFieldMultiset : List Pixel -> ElectricPotential -> EdgeCochain
 computeElectricFieldMultiset edges phi =
-  let mPhi = vexelToMultiset phi
-      mGrad = multisetCoboundary0To1 edges mPhi
-      eField = multisetToMaxel mGrad
-  in scaleMaxel (intToBoxInt (-1)) eField
+  let computeEdge : Pixel -> (Pixel, BoxInt)
+      computeEdge p =
+        let u = mkCell1 (coordAxis 0 p)
+            v = mkCell1 (coordAxis 1 p)
+            phiU = lookupCellMultiset u phi
+            phiV = lookupCellMultiset v phi
+            diff = phiV - phiU
+        in (p, intToBoxInt (-1) * diff)
+  in mkCellMultiset (map computeEdge edges)
 
 ||| Computes the electrostatic field 1-form E = -d0(Phi) over directed edge pixels.
 %inline
@@ -52,9 +57,8 @@ computeChargeDivergence voxels f = grassmannCoboundary2 voxels f
 public export
 computePoissonLaplacianMultiset : List Pixel -> ElectricPotential -> Vexel
 computePoissonLaplacianMultiset edges phi =
-  let mPhi = vexelToMultiset phi
-      mLap = multisetLaplacian0 edges mPhi
-  in multisetToVexel mLap
+  let eField = computeElectricFieldMultiset edges phi
+  in scaleCellMultiset (intToBoxInt (-1)) (boundaryCell1To0 eField)
 
 ||| Computes the discrete Poisson-Laplacian Delta(Phi) = d0* d0(Phi) over vertex singletons.
 %inline
@@ -68,9 +72,16 @@ computePoissonLaplacian edges phi =
 public export
 computeElectricFieldStream : FusedStream Pixel -> ElectricPotential -> FusedStream (Pixel, BoxInt)
 computeElectricFieldStream edges phi =
-  let mPhi = vexelToMultiset phi
-      gradStream = streamCoboundary0To1 edges mPhi
-  in mapStream (\(p, w) => (p, mulBox (intToBoxInt (-1)) w)) gradStream
+  filterMapStream (\p =>
+    let u = mkCell1 (coordAxis 0 p)
+        v = mkCell1 (coordAxis 1 p)
+        phiU = lookupCellMultiset u phi
+        phiV = lookupCellMultiset v phi
+        diff = phiV - phiU
+    in if boxIsZero diff
+         then Nothing
+         else Just (p, intToBoxInt (-1) * diff)
+  ) edges
 
 ||| Computes electrostatic field directly from the active geometric support of a Maxel in O(1) auxiliary registers.
 public export
@@ -83,9 +94,14 @@ computeElectricFieldFromMaxel m phi =
 public export
 computePoissonLaplacianStream : Fuel -> FusedStream Pixel -> ElectricPotential -> Vexel
 computePoissonLaplacianStream f edges phi =
-  let mPhi = vexelToMultiset phi
-      mLap = streamLaplacian0Fuel f edges mPhi
-  in multisetToVexel mLap
+  let eStream = computeElectricFieldStream edges phi
+  in foldStreamFuel f (\acc, (p, w) =>
+       let u = mkCell1 (coordAxis 0 p)
+           v = mkCell1 (coordAxis 1 p)
+           accV = setBoxTree v (lookupBoxTree v acc - w) acc
+           accU = setBoxTree u (lookupBoxTree u accV + w) acc
+       in accU
+     ) BoxLeaf eStream
 
 ------------------------------------------------------------------------
 -- 2. DISCRETE CALCULUS CONSERVATION LAWS

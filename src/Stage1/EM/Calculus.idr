@@ -33,7 +33,7 @@ computeElectricFieldMultiset edges phi =
 public export
 computeElectricField : List (Unixel, Unixel) -> ElectricPotential -> EdgeCochain
 computeElectricField edges phi =
-  let pxEdges = map (\(u, v) => mkPixel (unwrapUnixel u) (unwrapUnixel v)) edges
+  let pxEdges = map (\(u, v) => mkCell2 (coordAxis 0 u) (coordAxis 0 v)) edges
   in computeElectricFieldMultiset pxEdges phi
 
 ||| Computes the magnetic flux 2-form B = d1(A) over directed face pixels.
@@ -61,7 +61,7 @@ computePoissonLaplacianMultiset edges phi =
 public export
 computePoissonLaplacian : List (Unixel, Unixel) -> ElectricPotential -> Vexel
 computePoissonLaplacian edges phi =
-  let pxEdges = map (\(u, v) => mkPixel (unwrapUnixel u) (unwrapUnixel v)) edges
+  let pxEdges = map (\(u, v) => mkCell2 (coordAxis 0 u) (coordAxis 0 v)) edges
   in computePoissonLaplacianMultiset pxEdges phi
 
 ||| Computes electrostatic field E = -d₀(Φ) natively over an edge stream without intermediate List allocations.

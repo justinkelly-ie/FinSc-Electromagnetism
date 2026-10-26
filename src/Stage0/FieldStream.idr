@@ -79,13 +79,13 @@ runMaxwellStream = runFueledStream
 public export
 fusedPoyntingAccumulate : FusedStream MaxwellState -> Maxel
 fusedPoyntingAccumulate strm =
-  foldStreamFuel hyperbolicFuel (\acc, m => canonicalizeMaxel (addMaxel acc m)) neutral (fusedPoyntingStream strm)
+  foldStreamFuel hyperbolicFuel (\acc, m => canonicalizeCell (addCellMultiset acc m)) neutral (fusedPoyntingStream strm)
 
 ||| Accumulates total integer Poynting energy frequency quanta directly into a BoxInt scalar bounded by canonical Hyperbolic flux capacity (128 DE).
 public export
 fusedPoyntingEnergyAccumulate : FusedStream MaxwellState -> BoxInt
 fusedPoyntingEnergyAccumulate strm =
-  foldStreamFuel hyperbolicFuel (\acc, m => acc + totalMaxelWeight m) (intToBoxInt 0) (fusedPoyntingStream strm)
+  foldStreamFuel hyperbolicFuel (\acc, m => acc + totalCellMultisetWeight m) (intToBoxInt 0) (fusedPoyntingStream strm)
 
 
 ------------------------------------------------------------------------

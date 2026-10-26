@@ -1,8 +1,7 @@
 module Stage0.Potential
 
 import Stage0.BoxInt
-import Stage1.Carrier.Vexel
-import Stage1.Carrier.Maxel
+import public Stage1.Basis.Coordinate
 import public Stage1.GrassmannCalculus
 import Data.List
 
@@ -25,12 +24,12 @@ VectorPotential = EdgeCochain
 ||| Initialized vacuum scalar potential field (Phi = 0).
 public export
 vacuumElectricPotential : ElectricPotential
-vacuumElectricPotential = MkVexel []
+vacuumElectricPotential = emptyCellMultiset
 
 ||| Initialized vacuum vector potential field (A = 0).
 public export
 vacuumVectorPotential : VectorPotential
-vacuumVectorPotential = MkMaxel []
+vacuumVectorPotential = emptyCellMultiset
 
 ||| Evaluates discrete scalar potential Phi at a given vertex node Unixel.
 public export
@@ -45,19 +44,19 @@ evaluateVectorPotentialAt edge a = lookupEdge edge a
 ||| Superposes two scalar electric potential fields (Phi_1 + Phi_2).
 public export
 superposeElectricPotentials : ElectricPotential -> ElectricPotential -> ElectricPotential
-superposeElectricPotentials phi1 phi2 = addVexel phi1 phi2
+superposeElectricPotentials phi1 phi2 = addCellMultiset phi1 phi2
 
 ||| Superposes two vector magnetic potential fields (A_1 + A_2).
 public export
 superposeVectorPotentials : VectorPotential -> VectorPotential -> VectorPotential
-superposeVectorPotentials a1 a2 = addMaxel a1 a2
+superposeVectorPotentials a1 a2 = addCellMultiset a1 a2
 
 ||| Scales a scalar electric potential field by an integer charge factor k.
 public export
 scaleElectricPotential : BoxInt -> ElectricPotential -> ElectricPotential
-scaleElectricPotential k phi = scaleVexel k phi
+scaleElectricPotential k phi = scaleCellMultiset k phi
 
 ||| Scales a magnetic vector potential field by an integer coupling factor k.
 public export
 scaleVectorPotential : BoxInt -> VectorPotential -> VectorPotential
-scaleVectorPotential k a = scaleMaxel k a
+scaleVectorPotential k a = scaleCellMultiset k a

@@ -1,7 +1,7 @@
 module Stage1.EM.Hodge
 
 import Stage0.BoxInt
-import Stage1.Carrier.Maxel
+import public Stage1.Basis.Coordinate
 import public Stage1.GrassmannCalculus
 import Stage0.Potential
 import Stage1.EM.Calculus
@@ -39,13 +39,13 @@ HodgeComponents = (Maxel, Maxel, Maxel)
 %inline
 public export
 hodgeDecomposeEMField : Maxel -> HodgeComponents
-hodgeDecomposeEMField field = (MkMaxel [], MkMaxel [], field)
+hodgeDecomposeEMField field = (neutral, neutral, field)
 
 ||| Formal Proof Witness: Double Hodge Star application is an Involution (star(star(F)) == F).
 public export
 auditHodgeStarInvolutionProof : Bool
 auditHodgeStarInvolutionProof =
-  let eField = MkMaxel [(MkPixel 1 0, intToBoxInt 8), (MkPixel 2 0, intToBoxInt 15)]
+  let eField = singletonCell (mkPixel 1 0) (intToBoxInt 8) <+> singletonCell (mkPixel 2 0) (intToBoxInt 15)
       bDual  = hodgeDualElectricToMagnetic eField
       eBack  = hodgeDualMagneticToElectric bDual
   in eBack == eField

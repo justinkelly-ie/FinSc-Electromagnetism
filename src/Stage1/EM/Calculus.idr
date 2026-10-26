@@ -1,9 +1,7 @@
 module Stage1.EM.Calculus
 
 import Stage0.BoxInt
-import Stage1.Carrier.Vexel
-import Stage1.Carrier.Maxel
-import Stage1.Basis.Coordinate
+import public Stage1.Basis.Coordinate
 import public Stage1.Topology.Boundaries
 import public Stage1.GrassmannCalculus
 import Stage0.Potential
@@ -107,14 +105,23 @@ computePoissonLaplacianStream f edges phi =
 -- 2. DISCRETE CALCULUS CONSERVATION LAWS
 ------------------------------------------------------------------------
 
+public export
+multisetToMaxel : Multiset BoxInt Pixel -> Maxel
+multisetToMaxel ZeroM = BoxLeaf
+multisetToMaxel (AddM p w rest) =
+  let t = multisetToMaxel rest
+  in if boxIsZero w then t else setBoxTree p (lookupBoxTree p t + w) t
+
 ||| Proves that the electrostatic field from a constant potential is identically zero.
 public export
 auditConstantPotentialZeroFieldProof : Bool
 auditConstantPotentialZeroFieldProof =
-  let edges = [(MkUnixel 1, MkUnixel 2), (MkUnixel 2, MkUnixel 3)]
-      phi = MkVexel [(MkUnixel 1, intToBoxInt 10), (MkUnixel 2, intToBoxInt 10), (MkUnixel 3, intToBoxInt 10)]
+  let edges = [(mkCell1 1, mkCell1 2), (mkCell1 2, mkCell1 3)]
+      phi = singletonCell (mkCell1 1) (intToBoxInt 10) <+>
+            singletonCell (mkCell1 2) (intToBoxInt 10) <+>
+            singletonCell (mkCell1 3) (intToBoxInt 10)
       eField = computeElectricField edges phi
-  in eField == MkMaxel []
+  in eField == neutral
 
 ||| Static verification witness: DEC coboundary nilpotency (d² = 0 / Stokes' Theorem).
 public export
@@ -125,12 +132,14 @@ auditDecNilpotencyEMProof = auditDecNilpotencyProofExport
 public export
 auditElectricFieldStreamEquivalenceProof : Bool
 auditElectricFieldStreamEquivalenceProof =
-  let edges = [MkPixel 1 2, MkPixel 2 3]
-      phi = MkVexel [(MkUnixel 1, intToBoxInt 10), (MkUnixel 2, intToBoxInt 25), (MkUnixel 3, intToBoxInt 40)]
+  let edges = [mkPixel 1 2, mkPixel 2 3]
+      phi = singletonCell (mkCell1 1) (intToBoxInt 10) <+>
+            singletonCell (mkCell1 2) (intToBoxInt 25) <+>
+            singletonCell (mkCell1 3) (intToBoxInt 40)
       eFieldMultiset = computeElectricFieldMultiset edges phi
       eFieldStrm = computeElectricFieldStream (stream edges) phi
       eFieldFromStrm = multisetToMaxel (foldStreamCoboundaryToMultisetFuelModel hyperbolicGohFuelModel eFieldStrm)
-  in (lookupPixel (MkPixel 1 2) eFieldMultiset == lookupPixel (MkPixel 1 2) eFieldFromStrm) &&
-     (lookupPixel (MkPixel 2 3) eFieldMultiset == lookupPixel (MkPixel 2 3) eFieldFromStrm)
+  in (lookupCellMultiset (mkPixel 1 2) eFieldMultiset == lookupCellMultiset (mkPixel 1 2) eFieldFromStrm) &&
+     (lookupCellMultiset (mkPixel 2 3) eFieldMultiset == lookupCellMultiset (mkPixel 2 3) eFieldFromStrm)
 
 

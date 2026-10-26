@@ -1,9 +1,7 @@
 module Stage0.Flux
 
 import Stage0.BoxInt
-import Stage1.Carrier.Maxel
-import Stage1.Carrier.Boxel
-import Stage1.Basis.Coordinate
+import public Stage1.Basis.Coordinate
 import Stage0.Multiset
 import Stage1.GrassmannCalculus
 import Stage0.Potential
@@ -76,9 +74,8 @@ auditNoMagneticMonopolesProof =
               ]
       voxels = [(MkVoxel 1 1 1, faces)]
       -- Any exact solenoid magnetic field B = d1(A)
-      bField = MkMaxel [ (MkPixel 1 0, intToBoxInt 12)
-                       , (MkPixel 2 0, intToBoxInt 7)
-                       , (MkPixel 3 0, intToBoxInt 19)
-                       ]
+      bField = singletonCell (mkPixel 1 0) (intToBoxInt 12) <+>
+               singletonCell (mkPixel 2 0) (intToBoxInt 7) <+>
+               singletonCell (mkPixel 3 0) (intToBoxInt 19)
       divB = grassmannCoboundary2 voxels bField
-  in divB == MkBoxel []
+  in divB == neutral

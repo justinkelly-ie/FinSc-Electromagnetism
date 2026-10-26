@@ -1,8 +1,7 @@
 module Stage1.EM.Gauge
 
 import Stage0.BoxInt
-import Stage1.Carrier.Maxel
-import Stage1.Basis.Coordinate
+import public Stage1.Basis.Coordinate
 import Stage1.GrassmannCalculus
 import Stage0.Potential
 import Stage1.EM.Calculus
@@ -26,7 +25,7 @@ public export
 applyGaugeTransformation : List (Unixel, Unixel) -> GaugeFunction -> VectorPotential -> VectorPotential
 applyGaugeTransformation edges chi a =
   let d0Chi = grassmannCoboundary0 edges chi
-  in addMaxel a d0Chi
+  in addCellMultiset a d0Chi
 
 ||| Computes discrete Aharonov-Bohm holonomy phase loop sum: H = ∮ A · dl around a closed loop.
 %inline
@@ -49,8 +48,11 @@ auditGaugeInvarianceProof =
                              , (MkUnixel 3, MkUnixel 4)
                              , (MkUnixel 4, MkUnixel 1)
                              ])]
-      aOrig = MkMaxel [(MkPixel 1 2, intToBoxInt 5)]
-      chi   = MkVexel [(MkUnixel 1, intToBoxInt 3), (MkUnixel 2, intToBoxInt 7), (MkUnixel 3, intToBoxInt 12), (MkUnixel 4, intToBoxInt 2)]
+      aOrig = singletonCell (mkPixel 1 2) (intToBoxInt 5)
+      chi   = singletonCell (mkCell1 1) (intToBoxInt 3) <+>
+              singletonCell (mkCell1 2) (intToBoxInt 7) <+>
+              singletonCell (mkCell1 3) (intToBoxInt 12) <+>
+              singletonCell (mkCell1 4) (intToBoxInt 2)
       aGauge = applyGaugeTransformation edges chi aOrig
       
       bOrig  = computeMagneticField faces aOrig

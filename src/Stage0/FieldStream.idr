@@ -6,8 +6,7 @@ import Stage0.OnSeq.FusedStream
 import Stage0.Singleton.Bit
 import Stage1.EM.Maxwell
 import Stage1.EM.Calculus
-import Stage1.Carrier.Maxel
-import Stage1.Basis.Coordinate
+import public Stage1.Basis.Coordinate
 import Stage0.BoxInt
 import public Stage1.GrassmannCalculus
 import Stage1.MaxelTransform
@@ -80,7 +79,7 @@ runMaxwellStream = runFueledStream
 public export
 fusedPoyntingAccumulate : FusedStream MaxwellState -> Maxel
 fusedPoyntingAccumulate strm =
-  foldStreamFuel hyperbolicFuel (\acc, m => canonicalizeMaxel (addMaxel acc m)) (MkMaxel []) (fusedPoyntingStream strm)
+  foldStreamFuel hyperbolicFuel (\acc, m => canonicalizeMaxel (addMaxel acc m)) neutral (fusedPoyntingStream strm)
 
 ||| Accumulates total integer Poynting energy frequency quanta directly into a BoxInt scalar bounded by canonical Hyperbolic flux capacity (128 DE).
 public export
@@ -154,9 +153,9 @@ streamBoundaryPoyntingRadiationNat fuelSteps linkStream =
                   , (((the (Fin 2) (Data.Fin.FS Data.Fin.FZ), the (Fin 2) (Data.Fin.FS Data.Fin.FZ))), intToBoxInt 1) ]
       loopMaxel = foldStreamNat fuelSteps (\acc, step => maxelMaxelBeta acc step) idMaxel linkStream
       pxs = items (pixelBox loopMaxel)
-      maxelObj = MkMaxel (map (\((_, _), w) => (MkPixel 1 0, w)) pxs)
-      eVal = lookupPixel (MkPixel 1 0) maxelObj
-      bVal = lookupPixel (MkPixel 2 3) maxelObj
+      maxelObj = foldl (\acc, ((_, _), w) => singletonCell (mkPixel 1 0) w <+> acc) neutral pxs
+      eVal = lookupCellMultiset (mkPixel 1 0) maxelObj
+      bVal = lookupCellMultiset (mkPixel 2 3) maxelObj
   in addBox (mulBox eVal eVal) (mulBox bVal bVal)
 
 public export
@@ -168,9 +167,9 @@ streamBoundaryPoyntingRadiation f linkStream =
                   , (((the (Fin 2) (Data.Fin.FS Data.Fin.FZ), the (Fin 2) (Data.Fin.FS Data.Fin.FZ))), intToBoxInt 1) ]
       loopMaxel = foldStreamFuel f (\acc, step => maxelMaxelBeta acc step) idMaxel linkStream
       pxs = items (pixelBox loopMaxel)
-      maxelObj = MkMaxel (map (\((_, _), w) => (MkPixel 1 0, w)) pxs)
-      eVal = lookupPixel (MkPixel 1 0) maxelObj
-      bVal = lookupPixel (MkPixel 2 3) maxelObj
+      maxelObj = foldl (\acc, ((_, _), w) => singletonCell (mkPixel 1 0) w <+> acc) neutral pxs
+      eVal = lookupCellMultiset (mkPixel 1 0) maxelObj
+      bVal = lookupCellMultiset (mkPixel 2 3) maxelObj
   in addBox (mulBox eVal eVal) (mulBox bVal bVal)
 
 ||| Audits that an identity boundary link stream preserves Poynting field radiation invariant (Q_EM = 4).

@@ -2,9 +2,6 @@ module Stage1.EM.Maxwell
 
 import Stage0.BoxInt
 import Stage1.Order.Preorder
-import public Stage1.Carrier.Maxel
-import public Stage1.Carrier.Boxel
-import public Stage1.Carrier.Vexel
 import public Stage1.Basis.Coordinate
 import Stage1.GrassmannCalculus
 import Stage0.Potential
@@ -80,7 +77,7 @@ maxwellChargeDensity (_, _, _, rho) = rho
 ||| Vacuum Maxwell State (E = 0, B = 0, J = 0, rho = 0).
 public export
 vacuumMaxwellState : MaxwellState
-vacuumMaxwellState = (MkMaxel [], MkMaxel [], MkMaxel [], MkBoxel [])
+vacuumMaxwellState = (neutral, neutral, neutral, neutral)
 
 ------------------------------------------------------------------------
 -- 2. DISCRETE POYNTING ENERGY VECTOR & ENERGY CONSERVATION
@@ -91,24 +88,22 @@ vacuumMaxwellState = (MkMaxel [], MkMaxel [], MkMaxel [], MkBoxel [])
 public export
 computePoyntingVector : EdgeCochain -> FaceCochain -> Maxel
 computePoyntingVector eCo bCo =
-  let eList = maxelPixels eCo
-      bList = maxelPixels bCo
-      crossPairs = [ (hodgeDualPixel2To1 facePix, eVal * bVal)
-                   | (edgePix, eVal) <- eList
-                   , (facePix, bVal) <- bList
-                   , edgePix == hodgeDualPixel2To1 facePix
-                   ]
-  in canonicalizeMaxel (mkMaxel crossPairs)
+  foldBoxTreeL (\accE, (edgePix, eVal) =>
+    foldBoxTreeL (\accB, (facePix, bVal) =>
+      let dualPix = hodgeDualPixel2To1 facePix
+      in if edgePix == dualPix
+           then singletonCell dualPix (eVal * bVal) <+> accB
+           else accB
+    ) accE bCo
+  ) BoxLeaf eCo
 
 ||| Computes discrete electromagnetic energy density u = 1/2 (E^2 + B^2) over BoxInt weights.
 %inline
 public export
 computeEnergyDensity : EdgeCochain -> FaceCochain -> BoxInt
 computeEnergyDensity eCo bCo =
-  let eList = maxelPixels eCo
-      bList = maxelPixels bCo
-      eEnergy = sum (map (\(_, w) => w * w) eList)
-      bEnergy = sum (map (\(_, w) => w * w) bList)
+  let eEnergy = foldBoxTreeL (\acc, (_, w) => acc + (w * w)) (intToBoxInt 0) eCo
+      bEnergy = foldBoxTreeL (\acc, (_, w) => acc + (w * w)) (intToBoxInt 0) bCo
   in eEnergy + bEnergy
 
 ------------------------------------------------------------------------

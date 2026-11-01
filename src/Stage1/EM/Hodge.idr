@@ -6,6 +6,8 @@ import public Stage1.GrassmannCalculus
 import Stage0.Potential
 import Stage1.EM.Calculus
 import Data.List
+import Stage1.SymmetricMetricTensor as SMT
+import Stage1.TypeTheory.Staging
 
 %default total
 
@@ -49,3 +51,33 @@ auditHodgeStarInvolutionProof =
       bDual  = hodgeDualElectricToMagnetic eField
       eBack  = hodgeDualMagneticToElectric bDual
   in eBack == eField
+
+------------------------------------------------------------------------
+-- 3. 2LTT STAGED CURVED-SPACETIME HODGE STAR DUALITY
+------------------------------------------------------------------------
+
+||| 2LTT Staged Curved-Spacetime Metric Hodge Contraction:
+public export
+stagedHodgeStarMetric : {dim : Nat} -> Lift (SMT.SymmetricMetricTensor dim) -> VexelN dim -> Code (VexelN dim)
+stagedHodgeStarMetric qMetric v = SMT.stagedMetricContract qMetric v
+
+||| Staged evaluation of metric Hodge contraction:
+public export
+evalStagedHodgeStarMetric : {dim : Nat} -> Lift (SMT.SymmetricMetricTensor dim) -> VexelN dim -> VexelN dim
+evalStagedHodgeStarMetric qMetric v = splice (stagedHodgeStarMetric qMetric v)
+
+||| 2LTT Staged 4D Spacetime Hodge Star Operator:
+public export
+stagedHodgeDual4D : Lift (SMT.SymmetricMetricTensor 4) -> VexelN 4 -> Code (VexelN 4)
+stagedHodgeDual4D qMetric v = stagedHodgeStarMetric qMetric v
+
+||| Staged evaluation of 4D Hodge dual:
+public export
+evalStagedHodgeDual4D : Lift (SMT.SymmetricMetricTensor 4) -> VexelN 4 -> VexelN 4
+evalStagedHodgeDual4D qMetric v = splice (stagedHodgeDual4D qMetric v)
+
+||| QTT 0 Erased Proof Witness: Staged Hodge Star Metric Invariant
+public export
+0 prfStagedHodgeDual4D : (g : SMT.SymmetricMetricTensor 4) -> (v : VexelN 4) ->
+                        splice (stagedHodgeDual4D (quote g) v) = SMT.contractMetric g v
+prfStagedHodgeDual4D _ _ = Refl

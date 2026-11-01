@@ -22,14 +22,14 @@ public export
 computeElectricFieldMultiset : List Pixel -> ElectricPotential -> EdgeCochain
 computeElectricFieldMultiset edges phi =
   let computeEdge : Pixel -> (Pixel, BoxInt)
-      computeEdge p =
-        let u = mkCell1 (coordAxis 0 p)
-            v = mkCell1 (coordAxis 1 p)
-            phiU = lookupCellMultiset u phi
-            phiV = lookupCellMultiset v phi
-            diff = phiV - phiU
-        in (p, intToBoxInt (-1) * diff)
-  in mkCellMultiset (map computeEdge edges)
+  in foldl (\m, p =>
+       let u = mkCell1 (coordAxis 0 p)
+           v = mkCell1 (coordAxis 1 p)
+           phiU = lookupCellMultiset u phi
+           phiV = lookupCellMultiset v phi
+           diff = phiV - phiU
+       in m <+> singletonCell p (intToBoxInt (-1) * diff)
+     ) emptyCellMultiset edges
 
 ||| Computes the electrostatic field 1-form E = -d0(Phi) over directed edge pixels.
 %inline

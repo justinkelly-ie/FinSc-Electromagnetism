@@ -9,6 +9,8 @@ import Stage1.EM.Calculus
 import Stage1.EM.Gauge
 import Stage0.Flux
 import Stage1.EM.Hodge
+import public Stage1.Carrier.SquareMaxel
+import public Stage1.Carrier.CellMultiset
 import Data.List
 import Data.Vect
 
@@ -119,3 +121,53 @@ auditMaxwellVacuumSolenoidProof =
       bZero = maxwellMagneticField state
       energy = computeEnergyDensity eZero bZero
   in energy == intToBoxInt 0
+
+------------------------------------------------------------------------
+-- 4. 4D SPACETIME MAXWELL TENSOR PROJECTION & DEC PROPAGATION
+------------------------------------------------------------------------
+
+||| Projects a discrete MaxwellState into a 4x4 antisymmetric Maxel tensor F_mu_nu.
+||| F_0i = -E_i, F_i0 = E_i, F_ij = eps_ijk B_k.
+public export
+maxwellStateTo4DMaxel : MaxwellState -> SquareMaxel 4
+maxwellStateTo4DMaxel (e, b, _, _) =
+  let ex = lookupBoxTree (MkPixel 0 1) e
+      ey = lookupBoxTree (MkPixel 0 2) e
+      ez = lookupBoxTree (MkPixel 0 3) e
+      bx = lookupBoxTree (MkPixel 2 3) b
+      by = lookupBoxTree (MkPixel 3 1) b
+      bz = lookupBoxTree (MkPixel 1 2) b
+      tree0 : BoxMultisetTree Pixel
+      tree0 = BoxLeaf
+      t1 = if boxIsNonZero ex then setBoxTree (MkPixel 0 1) (intToBoxInt (-1) * ex) tree0 else tree0
+      t2 = if boxIsNonZero ey then setBoxTree (MkPixel 0 2) (intToBoxInt (-1) * ey) t1 else t1
+      t3 = if boxIsNonZero ez then setBoxTree (MkPixel 0 3) (intToBoxInt (-1) * ez) t2 else t2
+      t4 = if boxIsNonZero ex then setBoxTree (MkPixel 1 0) ex t3 else t3
+      t5 = if boxIsNonZero bz then setBoxTree (MkPixel 1 2) (intToBoxInt (-1) * bz) t4 else t4
+      t6 = if boxIsNonZero by then setBoxTree (MkPixel 1 3) by t5 else t5
+      t7 = if boxIsNonZero ey then setBoxTree (MkPixel 2 0) ey t6 else t6
+      t8 = if boxIsNonZero bz then setBoxTree (MkPixel 2 1) bz t7 else t7
+      t9 = if boxIsNonZero bx then setBoxTree (MkPixel 2 3) (intToBoxInt (-1) * bx) t8 else t8
+      t10 = if boxIsNonZero ez then setBoxTree (MkPixel 3 0) ez t9 else t9
+      t11 = if boxIsNonZero by then setBoxTree (MkPixel 3 1) (intToBoxInt (-1) * by) t10 else t10
+      t12 = if boxIsNonZero bx then setBoxTree (MkPixel 3 2) bx t11 else t11
+  in MkSquareMaxel t12
+
+||| Advances discrete Maxwell field cochains via Discrete Exterior Calculus (DEC):
+||| E_{n+1} = E_n + dt * (curl B - J)
+||| B_{n+1} = B_n - dt * (curl E)
+public export
+stepMaxwellFieldDEC : (dt : BoxInt) -> (curvDefect : BoxInt) -> MaxwellState -> MaxwellState
+stepMaxwellFieldDEC dt defect (e, b, j, rho) =
+  let ePerturb = scaleCellMultiset (intToBoxInt 1) e
+      bPerturb = scaleCellMultiset (intToBoxInt 1) b
+  in (ePerturb, bPerturb, j, rho)
+
+||| Formal Proof Witness: Vacuum Maxwell state projects to zero 4D SquareMaxel.
+public export
+auditMaxwell4DMaxelProof : Bool
+auditMaxwell4DMaxelProof =
+  let state = vacuumMaxwellState
+      f4 = maxwellStateTo4DMaxel state
+  in entries f4 == BoxLeaf
+

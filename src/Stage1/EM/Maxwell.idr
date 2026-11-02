@@ -153,15 +153,74 @@ maxwellStateTo4DMaxel (e, b, _, _) =
       t12 = if boxIsNonZero bx then setBoxTree (MkPixel 3 2) bx t11 else t11
   in MkSquareMaxel t12
 
+||| Helper: extracts directed edge E_i component from EdgeCochain.
+public export
+getE0 : Nat -> EdgeCochain -> BoxInt
+getE0 i m =
+  let v1 = lookupBoxTree (MkPixel 0 i) m
+      v2 = lookupBoxTree (MkPixel i 0) m
+  in if boxIsNonZero v1 then v1 else (if boxIsNonZero v2 then (intToBoxInt (-1) * v2) else intToBoxInt 0)
+
+||| Helper: extracts directed face B_ij component from FaceCochain.
+public export
+getB : Nat -> Nat -> FaceCochain -> BoxInt
+getB r c m =
+  let v1 = lookupBoxTree (MkPixel r c) m
+      v2 = lookupBoxTree (MkPixel c r) m
+  in if boxIsNonZero v1 then v1 else (if boxIsNonZero v2 then (intToBoxInt (-1) * v2) else intToBoxInt 0)
+
+||| Computes discrete curl of Electric field 1-form E -> FaceCochain (2-form):
+||| (curl E)_x on face (2, 3) = E_z - E_y
+||| (curl E)_y on face (3, 1) = E_x - E_z
+||| (curl E)_z on face (1, 2) = E_y - E_x
+public export
+discreteCurlElectric : EdgeCochain -> FaceCochain
+discreteCurlElectric e =
+  let ex = getE0 1 e
+      ey = getE0 2 e
+      ez = getE0 3 e
+      cx = ez - ey
+      cy = ex - ez
+      cz = ey - ex
+      tree0 : BoxMultisetTree Pixel = BoxLeaf
+      t1 = if boxIsNonZero cx then setBoxTree (MkPixel 2 3) cx tree0 else tree0
+      t2 = if boxIsNonZero cy then setBoxTree (MkPixel 3 1) cy t1 else t1
+      t3 = if boxIsNonZero cz then setBoxTree (MkPixel 1 2) cz t2 else t2
+  in t3
+
+||| Computes discrete curl of Magnetic field 2-form B -> EdgeCochain (1-form):
+||| (curl B)_x on edge (0, 1) = B_z - B_y
+||| (curl B)_y on edge (0, 2) = B_x - B_z
+||| (curl B)_z on edge (0, 3) = B_y - B_x
+public export
+discreteCurlMagnetic : FaceCochain -> EdgeCochain
+discreteCurlMagnetic b =
+  let bx = getB 2 3 b
+      by = getB 3 1 b
+      bz = getB 1 2 b
+      cx = bz - by
+      cy = bx - bz
+      cz = by - bx
+      tree0 : BoxMultisetTree Pixel = BoxLeaf
+      t1 = if boxIsNonZero cx then setBoxTree (MkPixel 0 1) cx tree0 else tree0
+      t2 = if boxIsNonZero cy then setBoxTree (MkPixel 0 2) cy t1 else t1
+      t3 = if boxIsNonZero cz then setBoxTree (MkPixel 0 3) cz t2 else t2
+  in t3
+
 ||| Advances discrete Maxwell field cochains via Discrete Exterior Calculus (DEC):
 ||| E_{n+1} = E_n + dt * (curl B - J)
 ||| B_{n+1} = B_n - dt * (curl E)
 public export
 stepMaxwellFieldDEC : (dt : BoxInt) -> (curvDefect : BoxInt) -> MaxwellState -> MaxwellState
 stepMaxwellFieldDEC dt defect (e, b, j, rho) =
-  let ePerturb = scaleCellMultiset (intToBoxInt 1) e
-      bPerturb = scaleCellMultiset (intToBoxInt 1) b
-  in (ePerturb, bPerturb, j, rho)
+  let curlB = discreteCurlMagnetic b
+      curlE = discreteCurlElectric e
+      jNeg  = scaleCellMultiset (intToBoxInt (-1)) j
+      bDelta = scaleCellMultiset (intToBoxInt (-1) * dt) curlE
+      eDelta = scaleCellMultiset dt (addCellMultiset curlB jNeg)
+      nextE  = addCellMultiset e eDelta
+      nextB  = addCellMultiset b bDelta
+  in (nextE, nextB, j, rho)
 
 ||| Formal Proof Witness: Vacuum Maxwell state projects to zero 4D SquareMaxel.
 public export

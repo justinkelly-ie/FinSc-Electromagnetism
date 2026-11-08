@@ -110,7 +110,6 @@ computePoyntingVector eCo bCo =
     (streamPoyntingFlux eCo bCo)
 
 ||| Computes discrete electromagnetic energy density u = 1/2 (E^2 + B^2) over BoxInt weights.
-%inline
 public export
 computeEnergyDensity : EdgeCochain -> FaceCochain -> BoxInt
 computeEnergyDensity eCo bCo =

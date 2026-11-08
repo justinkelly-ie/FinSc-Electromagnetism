@@ -21,6 +21,7 @@ import Data.Fin
 ------------------------------------------------------------------------
 
 ||| Convert a sequence of Maxwell field states into a deforested stream.
+||| Deprecated: Stream Maxwell states directly using `stream` or domain-specific transducers.
 public export
 streamMaxwellStates : List MaxwellState -> FusedStream MaxwellState
 streamMaxwellStates = stream
@@ -40,18 +41,25 @@ public export
 poyntingTransducer : StreamTransducer MaxwellState Maxel
 poyntingTransducer = MkTransducer (\(), st => Yield (computePoyntingVector (maxwellElectricField st) (maxwellMagneticField st)) ()) ()
 
+||| Deforested Poynting flux stream transducer combining concurrent Electric and Magnetic cochain streams
+||| into a stream of Poynting vector Maxel carriers in O(1) registers.
+public export
+streamPoyntingDualStream : FusedStream EdgeCochain -> FusedStream FaceCochain -> FusedStream Maxel
+streamPoyntingDualStream eStrm bStrm =
+  zipWithStream computePoyntingVector eStrm bStrm
+
 ||| Single-pass deforested electric field extraction pipelined over Maxwell state streams.
-%inline public export
+public export
 streamElectricField : FusedStream MaxwellState -> FusedStream EdgeCochain
 streamElectricField strm = transduceStream electricTransducer strm
 
 ||| Single-pass deforested magnetic field extraction pipelined over Maxwell state streams.
-%inline public export
+public export
 streamMagneticField : FusedStream MaxwellState -> FusedStream FaceCochain
 streamMagneticField strm = transduceStream magneticTransducer strm
 
 ||| Single-pass deforested Poynting vector flux extraction pipelined over Maxwell state streams.
-%inline public export
+public export
 streamPoyntingVector : FusedStream MaxwellState -> FusedStream Maxel
 streamPoyntingVector strm = transduceStream poyntingTransducer strm
 
@@ -71,6 +79,7 @@ fusedMagneticStream : FusedStream MaxwellState -> FusedStream FaceCochain
 fusedMagneticStream = streamMagneticField
 
 ||| Evaluates a Maxwell state stream into a List container.
+||| Deprecated: Process streams with `foldStreamFuel` or `foldStreamNat` without intermediate lists.
 public export
 runMaxwellStream : Fuel -> FusedStream MaxwellState -> List MaxwellState
 runMaxwellStream = runFueledStream
@@ -103,8 +112,23 @@ public export
 Eq PhotonStateToken where
   (MkPhotonToken p1 f1) == (MkPhotonToken p2 f2) = p1 == p2 && f1 == f2
 
+||| Generates a deforested stream of radiated photon tokens directly from a time-varying Maxwell field stream:
+||| Extracts field frequency/energy quanta and polarization bit directly from each Maxwell state in O(1) registers.
+public export
+streamRadiatedPhotonsFromMaxwell : FusedStream MaxwellState -> FusedStream PhotonStateToken
+streamRadiatedPhotonsFromMaxwell =
+  mapStream (\st =>
+    let eField = maxwellElectricField st
+        bField = maxwellMagneticField st
+        eEnergy = totalCellMultisetWeight eField
+        bEnergy = totalCellMultisetWeight bField
+        freq = addBox eEnergy bEnergy
+        polBit = if unwrapBox eEnergy >= unwrapBox bEnergy then Bit.Zero else Bit.One
+    in MkPhotonToken polBit freq)
+
 ||| Unfolds a list of photon state parameters into a deforested PhotonStateStream.
-%inline public export
+||| Deprecated: Prefer `streamRadiatedPhotonsFromMaxwell` or direct FusedStream token producers.
+public export
 unfoldPhotonStream : List (Bit, BoxInt) -> FusedStream PhotonStateToken
 unfoldPhotonStream items = MkStream nextStep items
   where
@@ -119,12 +143,21 @@ fusedPhotonStateStream strm =
   mapStream (\tok => MkPhotonToken (tok.polarization) (tok.frequency + intToBoxInt 1)) strm
 
 ||| Evaluates total photon stream energy directly across a PhotonStateToken stream using a fueled fold.
+%spec f
 public export
 fusedComputePhotonStreamEnergyDirect : Fuel -> FusedStream PhotonStateToken -> BoxInt
 fusedComputePhotonStreamEnergyDirect f strm =
   foldStreamFuel f (\acc, tok => addBox (frequency tok) acc) (intToBoxInt 0) strm
 
+||| Evaluates total photon stream energy directly across a PhotonStateToken stream over Nat fuel.
+%spec fuel
+public export
+fusedComputePhotonStreamEnergyNatDirect : Nat -> FusedStream PhotonStateToken -> BoxInt
+fusedComputePhotonStreamEnergyNatDirect fuel strm =
+  foldStreamNat fuel (\acc, tok => addBox (frequency tok) acc) (intToBoxInt 0) strm
+
 ||| Evaluates total photon stream energy using a fueled fold.
+||| Deprecated: Prefer `fusedComputePhotonStreamEnergyDirect` directly over FusedStream.
 public export
 fusedComputePhotonStreamEnergy : Fuel -> List (Bit, BoxInt) -> BoxInt
 fusedComputePhotonStreamEnergy f items =
@@ -144,6 +177,7 @@ auditPhotonStreamProof =
 
 ||| Evaluates closed boundary surface Poynting energy radiation from a stream of boundary link transforms.
 ||| Deforests link transitions without matrix allocations.
+%spec fuelSteps
 public export
 streamBoundaryPoyntingRadiationNat : Nat -> FusedStream (MaxelTransform (Fin 2) (Fin 2)) -> BoxInt
 streamBoundaryPoyntingRadiationNat fuelSteps linkStream =
@@ -156,6 +190,7 @@ streamBoundaryPoyntingRadiationNat fuelSteps linkStream =
       bVal = intToBoxInt 0
   in addBox (mulBox eVal eVal) (mulBox bVal bVal)
 
+%spec f
 public export
 streamBoundaryPoyntingRadiation : Fuel -> FusedStream (MaxelTransform (Fin 2) (Fin 2)) -> BoxInt
 streamBoundaryPoyntingRadiation f linkStream =

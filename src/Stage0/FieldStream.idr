@@ -152,10 +152,8 @@ streamBoundaryPoyntingRadiationNat fuelSteps linkStream =
                   [ (((the (Fin 2) Data.Fin.FZ, the (Fin 2) Data.Fin.FZ)), intToBoxInt 1)
                   , (((the (Fin 2) (Data.Fin.FS Data.Fin.FZ), the (Fin 2) (Data.Fin.FS Data.Fin.FZ))), intToBoxInt 1) ]
       loopMaxel = foldStreamNat fuelSteps (\acc, step => maxelMaxelBeta acc step) idMaxel linkStream
-      pxs = items (pixelBox loopMaxel)
-      maxelObj = foldl (\acc, ((_, _), w) => singletonCell (mkPixel 1 0) w <+> acc) neutral pxs
-      eVal = lookupCellMultiset (mkPixel 1 0) maxelObj
-      bVal = lookupCellMultiset (mkPixel 2 3) maxelObj
+      eVal = totalMassBox (pixelBox loopMaxel)
+      bVal = intToBoxInt 0
   in addBox (mulBox eVal eVal) (mulBox bVal bVal)
 
 public export
@@ -166,10 +164,8 @@ streamBoundaryPoyntingRadiation f linkStream =
                   [ (((the (Fin 2) Data.Fin.FZ, the (Fin 2) Data.Fin.FZ)), intToBoxInt 1)
                   , (((the (Fin 2) (Data.Fin.FS Data.Fin.FZ), the (Fin 2) (Data.Fin.FS Data.Fin.FZ))), intToBoxInt 1) ]
       loopMaxel = foldStreamFuel f (\acc, step => maxelMaxelBeta acc step) idMaxel linkStream
-      pxs = items (pixelBox loopMaxel)
-      maxelObj = foldl (\acc, ((_, _), w) => singletonCell (mkPixel 1 0) w <+> acc) neutral pxs
-      eVal = lookupCellMultiset (mkPixel 1 0) maxelObj
-      bVal = lookupCellMultiset (mkPixel 2 3) maxelObj
+      eVal = totalMassBox (pixelBox loopMaxel)
+      bVal = intToBoxInt 0
   in addBox (mulBox eVal eVal) (mulBox bVal bVal)
 
 ||| Audits that an identity boundary link stream preserves Poynting field radiation invariant (Q_EM = 4).

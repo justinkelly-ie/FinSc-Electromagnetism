@@ -11,6 +11,8 @@ import Stage0.Flux
 import Stage1.EM.Hodge
 import public Stage1.Carrier.SquareMaxel
 import public Stage1.Carrier.CellMultiset
+import Stage0.OnSeq.FusedStream
+import Stage0.StructuralFuel
 import Data.List
 import Data.Vect
 
@@ -85,19 +87,27 @@ vacuumMaxwellState = (neutral, neutral, neutral, neutral)
 -- 2. DISCRETE POYNTING ENERGY VECTOR & ENERGY CONSERVATION
 ------------------------------------------------------------------------
 
-||| Computes discrete Poynting vector S = E x B across 3D spatial pixel components.
-%inline
+||| Single-pass deforested Poynting flux stream S = *(E ^ B) mapping dual-contracted components
+||| directly across cochain Maxel carriers in O(1) registers.
+public export
+streamPoyntingFlux : EdgeCochain -> FaceCochain -> FusedStream (Pixel, BoxInt)
+streamPoyntingFlux eCo bCo =
+  filterMapStream (\(facePix, bVal) =>
+    let dualPix = hodgeDualPixel2To1 facePix
+        eVal = lookupCellMultiset dualPix eCo
+        prod = mulBox eVal bVal
+    in if boxIsNonZero prod then Just (dualPix, prod) else Nothing
+  ) (streamCellMultiset bCo)
+
+||| Computes discrete Poynting vector S = E x B across 3D spatial pixel components
+||| in O(M log N) single-pass tree traversal instead of O(N * M) nested loops.
 public export
 computePoyntingVector : EdgeCochain -> FaceCochain -> Maxel
 computePoyntingVector eCo bCo =
-  foldBoxTreeL (\accE, (edgePix, eVal) =>
-    foldBoxTreeL (\accB, (facePix, bVal) =>
-      let dualPix = hodgeDualPixel2To1 facePix
-      in if edgePix == dualPix
-           then singletonCell dualPix (eVal * bVal) <+> accB
-           else accB
-    ) accE bCo
-  ) BoxLeaf eCo
+  foldStreamNat (gohSteps hyperbolicGohFuelModel)
+    (\acc, (px, w) => addCellTree px w acc)
+    BoxLeaf
+    (streamPoyntingFlux eCo bCo)
 
 ||| Computes discrete electromagnetic energy density u = 1/2 (E^2 + B^2) over BoxInt weights.
 %inline
@@ -131,42 +141,42 @@ auditMaxwellVacuumSolenoidProof =
 public export
 maxwellStateTo4DMaxel : MaxwellState -> SquareMaxel 4
 maxwellStateTo4DMaxel (e, b, _, _) =
-  let ex = lookupBoxTree (MkPixel 0 1) e
-      ey = lookupBoxTree (MkPixel 0 2) e
-      ez = lookupBoxTree (MkPixel 0 3) e
-      bx = lookupBoxTree (MkPixel 2 3) b
-      by = lookupBoxTree (MkPixel 3 1) b
-      bz = lookupBoxTree (MkPixel 1 2) b
+  let ex = lookupCellMultiset (MkPixel 0 1) e
+      ey = lookupCellMultiset (MkPixel 0 2) e
+      ez = lookupCellMultiset (MkPixel 0 3) e
+      bx = lookupCellMultiset (MkPixel 2 3) b
+      by = lookupCellMultiset (MkPixel 3 1) b
+      bz = lookupCellMultiset (MkPixel 1 2) b
       tree0 : BoxMultisetTree Pixel
       tree0 = BoxLeaf
-      t1 = if boxIsNonZero ex then setBoxTree (MkPixel 0 1) (intToBoxInt (-1) * ex) tree0 else tree0
-      t2 = if boxIsNonZero ey then setBoxTree (MkPixel 0 2) (intToBoxInt (-1) * ey) t1 else t1
-      t3 = if boxIsNonZero ez then setBoxTree (MkPixel 0 3) (intToBoxInt (-1) * ez) t2 else t2
-      t4 = if boxIsNonZero ex then setBoxTree (MkPixel 1 0) ex t3 else t3
-      t5 = if boxIsNonZero bz then setBoxTree (MkPixel 1 2) (intToBoxInt (-1) * bz) t4 else t4
-      t6 = if boxIsNonZero by then setBoxTree (MkPixel 1 3) by t5 else t5
-      t7 = if boxIsNonZero ey then setBoxTree (MkPixel 2 0) ey t6 else t6
-      t8 = if boxIsNonZero bz then setBoxTree (MkPixel 2 1) bz t7 else t7
-      t9 = if boxIsNonZero bx then setBoxTree (MkPixel 2 3) (intToBoxInt (-1) * bx) t8 else t8
-      t10 = if boxIsNonZero ez then setBoxTree (MkPixel 3 0) ez t9 else t9
-      t11 = if boxIsNonZero by then setBoxTree (MkPixel 3 1) (intToBoxInt (-1) * by) t10 else t10
-      t12 = if boxIsNonZero bx then setBoxTree (MkPixel 3 2) bx t11 else t11
+      t1 = if boxIsNonZero ex then setCellMultiset (MkPixel 0 1) (intToBoxInt (-1) * ex) tree0 else tree0
+      t2 = if boxIsNonZero ey then setCellMultiset (MkPixel 0 2) (intToBoxInt (-1) * ey) t1 else t1
+      t3 = if boxIsNonZero ez then setCellMultiset (MkPixel 0 3) (intToBoxInt (-1) * ez) t2 else t2
+      t4 = if boxIsNonZero ex then setCellMultiset (MkPixel 1 0) ex t3 else t3
+      t5 = if boxIsNonZero bz then setCellMultiset (MkPixel 1 2) (intToBoxInt (-1) * bz) t4 else t4
+      t6 = if boxIsNonZero by then setCellMultiset (MkPixel 1 3) by t5 else t5
+      t7 = if boxIsNonZero ey then setCellMultiset (MkPixel 2 0) ey t6 else t6
+      t8 = if boxIsNonZero bz then setCellMultiset (MkPixel 2 1) bz t7 else t7
+      t9 = if boxIsNonZero bx then setCellMultiset (MkPixel 2 3) (intToBoxInt (-1) * bx) t8 else t8
+      t10 = if boxIsNonZero ez then setCellMultiset (MkPixel 3 0) ez t9 else t9
+      t11 = if boxIsNonZero by then setCellMultiset (MkPixel 3 1) (intToBoxInt (-1) * by) t10 else t10
+      t12 = if boxIsNonZero bx then setCellMultiset (MkPixel 3 2) bx t11 else t11
   in MkSquareMaxel t12
 
 ||| Helper: extracts directed edge E_i component from EdgeCochain.
 public export
 getE0 : Nat -> EdgeCochain -> BoxInt
 getE0 i m =
-  let v1 = lookupBoxTree (MkPixel 0 i) m
-      v2 = lookupBoxTree (MkPixel i 0) m
+  let v1 = lookupCellMultiset (MkPixel 0 i) m
+      v2 = lookupCellMultiset (MkPixel i 0) m
   in if boxIsNonZero v1 then v1 else (if boxIsNonZero v2 then (intToBoxInt (-1) * v2) else intToBoxInt 0)
 
 ||| Helper: extracts directed face B_ij component from FaceCochain.
 public export
 getB : Nat -> Nat -> FaceCochain -> BoxInt
 getB r c m =
-  let v1 = lookupBoxTree (MkPixel r c) m
-      v2 = lookupBoxTree (MkPixel c r) m
+  let v1 = lookupCellMultiset (MkPixel r c) m
+      v2 = lookupCellMultiset (MkPixel c r) m
   in if boxIsNonZero v1 then v1 else (if boxIsNonZero v2 then (intToBoxInt (-1) * v2) else intToBoxInt 0)
 
 ||| Computes discrete curl of Electric field 1-form E -> FaceCochain (2-form):
@@ -183,9 +193,9 @@ discreteCurlElectric e =
       cy = ex - ez
       cz = ey - ex
       tree0 : BoxMultisetTree Pixel = BoxLeaf
-      t1 = if boxIsNonZero cx then setBoxTree (MkPixel 2 3) cx tree0 else tree0
-      t2 = if boxIsNonZero cy then setBoxTree (MkPixel 3 1) cy t1 else t1
-      t3 = if boxIsNonZero cz then setBoxTree (MkPixel 1 2) cz t2 else t2
+      t1 = if boxIsNonZero cx then setCellMultiset (MkPixel 2 3) cx tree0 else tree0
+      t2 = if boxIsNonZero cy then setCellMultiset (MkPixel 3 1) cy t1 else t1
+      t3 = if boxIsNonZero cz then setCellMultiset (MkPixel 1 2) cz t2 else t2
   in t3
 
 ||| Computes discrete curl of Magnetic field 2-form B -> EdgeCochain (1-form):
@@ -202,9 +212,9 @@ discreteCurlMagnetic b =
       cy = bx - bz
       cz = by - bx
       tree0 : BoxMultisetTree Pixel = BoxLeaf
-      t1 = if boxIsNonZero cx then setBoxTree (MkPixel 0 1) cx tree0 else tree0
-      t2 = if boxIsNonZero cy then setBoxTree (MkPixel 0 2) cy t1 else t1
-      t3 = if boxIsNonZero cz then setBoxTree (MkPixel 0 3) cz t2 else t2
+      t1 = if boxIsNonZero cx then setCellMultiset (MkPixel 0 1) cx tree0 else tree0
+      t2 = if boxIsNonZero cy then setCellMultiset (MkPixel 0 2) cy t1 else t1
+      t3 = if boxIsNonZero cz then setCellMultiset (MkPixel 0 3) cz t2 else t2
   in t3
 
 ||| Advances discrete Maxwell field cochains via Discrete Exterior Calculus (DEC):

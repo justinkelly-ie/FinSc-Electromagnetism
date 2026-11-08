@@ -110,7 +110,7 @@ multisetToMaxel : Multiset BoxInt Pixel -> Maxel
 multisetToMaxel ZeroM = BoxLeaf
 multisetToMaxel (AddM p w rest) =
   let t = multisetToMaxel rest
-  in if boxIsZero w then t else setBoxTree p (lookupBoxTree p t + w) t
+  in if boxIsZero w then t else setCellMultiset p (lookupCellMultiset p t + w) t
 
 ||| Proves that the electrostatic field from a constant potential is identically zero.
 public export

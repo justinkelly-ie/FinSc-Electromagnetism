@@ -6,6 +6,8 @@ import Stage0.Multiset
 import Stage1.GrassmannCalculus
 import Stage0.Potential
 import Stage1.EM.Calculus
+import Stage0.OnSeq.FusedStream
+import Stage0.StructuralFuel
 import Data.List
 import Data.Vect
 
@@ -15,12 +17,27 @@ import Data.Vect
 -- 1. PURE MULTISET PLAQUETTE FLUX & FARADAY ELECTROMOTIVE INDUCTION
 ------------------------------------------------------------------------
 
+||| Single-pass streaming plaquette magnetic flux B_pl = ∮ A · dl enclosed by a stream of pixel edges.
+public export
+streamMultisetPlaquetteFlux : FusedStream Pixel -> Multiset BoxInt Pixel -> BoxInt
+streamMultisetPlaquetteFlux loopEdges potMultiset =
+  foldStreamNat (gohSteps hyperbolicGohFuelModel) (\acc, p => addBox (lookupCount p potMultiset) acc) (intToBoxInt 0) loopEdges
+
 ||| Computes magnetic flux B_pl = ∮ A · dl enclosed by a closed loop of Pixel edges
 ||| evaluated over a vector potential multiset A : Multiset BoxInt Pixel.
 public export
 computeMultisetPlaquetteFlux : List Pixel -> Multiset BoxInt Pixel -> BoxInt
 computeMultisetPlaquetteFlux loopEdges potMultiset =
-  sum (map (\p => lookupCount p potMultiset) loopEdges)
+  streamMultisetPlaquetteFlux (stream loopEdges) potMultiset
+
+||| Single-pass streaming Faraday EMF across an edge stream.
+public export
+streamMultisetFaradayEMF : Multiset BoxInt Pixel -> Multiset BoxInt Pixel -> FusedStream Pixel -> BoxInt -> BoxInt
+streamMultisetFaradayEMF potT1 potT2 loopEdges dt =
+  let fluxT1 = streamMultisetPlaquetteFlux loopEdges potT1
+      fluxT2 = streamMultisetPlaquetteFlux loopEdges potT2
+      deltaFlux = fluxT2 - fluxT1
+  in intToBoxInt (-1) * deltaFlux
 
 ||| Computes Faraday's Law of Electromotive Force (EMF): E_emf = - (Flux_t2 - Flux_t1) / dt
 ||| over a loop specified by pure multiset vector potentials.

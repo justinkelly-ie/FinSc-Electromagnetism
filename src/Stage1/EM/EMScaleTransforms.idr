@@ -146,7 +146,13 @@ prfEMScaleAdjunctionDuality = proofEMHomIso
 ||| Proof witness exporter for EM ScaleTransform Plugin
 public export
 auditEMScaleTransformProof : Bool
-auditEMScaleTransformProof = True
+auditEMScaleTransformProof =
+  let t : MultisetTensor (ConcreteEMFunctor Nat) Nat
+      t = AddM (MkConcreteEMFunctor (MkConcreteEM (intToBoxInt 137)) 1, 2) (intToBoxInt 1) ZeroM
+      pushed : EMMacroDomain
+      pushed = f_pushforward (MkConcreteEM (intToBoxInt 137))
+  in emHomTensorInv (emHomTensorIso t) == t &&
+     pushed == MkEMMacro (intToBoxInt 137)
 
 --------------------------------------------------------------------------------
 -- 2LTT STAGING CODE GENERATOR TRANSDUCER

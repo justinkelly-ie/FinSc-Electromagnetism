@@ -3,7 +3,7 @@ module Stage0.FieldStream
 import Data.List
 import Data.Fuel
 import Stage0.OnSeq.FusedStream
-import Stage0.Singleton.Bit
+import Stage0.Bit
 import Stage1.EM.Maxwell
 import Stage1.EM.Calculus
 import public Stage1.Basis.Coordinate

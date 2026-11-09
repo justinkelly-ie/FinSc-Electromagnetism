@@ -7,6 +7,8 @@ import Stage1.Carrier.SquareMaxel
 import Stage1.Carrier.CellMultiset
 import Stage1.Carrier.Maxel
 import Stage1.ProjectiveDihedron
+import Stage1.DihedronModel
+import Stage0.DihedronStream
 import Stage1.TypeTheory.Staging
 
 %default total
@@ -139,8 +141,57 @@ emToMaxel (MkMinkowskiEM [er, es] bz) =
       (setCellMultiset (mkPixel 2 1) (er + bz)
         (setCellMultiset (mkPixel 2 2) (negBox es) emptyMaxel)))
 
+||| Extracts a Minkowski electromagnetic field from a 2x2 Maxel AVL tree container:
+||| pixel (1, 1) = Es, pixel (1, 2) = Er - Bz, pixel (2, 1) = Er + Bz, pixel (2, 2) = -Es.
+public export
+maxelToEM : Maxel -> MinkowskiEMField
+maxelToEM m =
+  let es = lookupCellMultiset (mkPixel 1 1) m
+      b  = lookupCellMultiset (mkPixel 1 2) m
+      c  = lookupCellMultiset (mkPixel 2 1) m
+      er = divBoxInt2 (c + b)
+      bz = divBoxInt2 (c - b)
+  in MkMinkowskiEM [er, es] bz
+  where
+    divBoxInt2 : BoxInt -> BoxInt
+    divBoxInt2 bx = intToBoxInt (unwrapBox bx `div` 2)
+
+||| Converts Minkowski electromagnetic field into the concrete Dihedron2 model stencil from FinSc-Metric-Substrate:
+public export
+emToDihedron2 : MinkowskiEMField -> Dihedron2
+emToDihedron2 (MkMinkowskiEM [er, es] bz) =
+  MkDihedron2 es (er - bz) (er + bz) (negBox es)
+
+||| Reconstructs Minkowski electromagnetic field from the concrete Dihedron2 model stencil:
+public export
+dihedron2ToEM : Dihedron2 -> MinkowskiEMField
+dihedron2ToEM (MkDihedron2 d00 d01 d10 d11) =
+  let es = divBoxInt2 (d00 - d11)
+      er = divBoxInt2 (d10 + d01)
+      bz = divBoxInt2 (d10 - d01)
+  in MkMinkowskiEM [er, es] bz
+  where
+    divBoxInt2 : BoxInt -> BoxInt
+    divBoxInt2 bx = intToBoxInt (unwrapBox bx `div` 2)
+
 ------------------------------------------------------------------------
--- 6. 2LTT STAGED CODE GENERATION (Rule 04)
+-- 6. DEFORESTED ELECTROMAGNETIC FIELD STREAM TRANSDUCERS (Rule 04 §12)
+------------------------------------------------------------------------
+
+||| Single-pass deforested stream transformer boosting electromagnetic fields in O(1) auxiliary registers.
+public export
+streamBoostEMField : ProjectiveDihedron -> FusedStream MinkowskiEMField -> FusedStream MinkowskiEMField
+streamBoostEMField alpha strm =
+  mapStream (boostEMFieldProjective alpha) strm
+
+||| Deforested stream transformer accumulating relativistic Lorentz frame changes on an initial EM field.
+public export
+streamAccumulateEMBoosts : FusedStream ProjectiveDihedron -> MinkowskiEMField -> FusedStream MinkowskiEMField
+streamAccumulateEMBoosts boostStrm em0 =
+  mapStream (\boost => boostEMFieldProjective boost em0) (streamAccumulateBoosts boostStrm)
+
+------------------------------------------------------------------------
+-- 7. 2LTT STAGED CODE GENERATION (Rule 04)
 ------------------------------------------------------------------------
 
 ||| Deforested 2LTT staged code generator for electromagnetic field Lorentz boosts.
@@ -217,3 +268,56 @@ auditMinkowskiEMFieldTransportProof =
 public export
 0 prfAuditMinkowskiEMFieldTransport : Stage1.EM.MinkowskiFaraday.auditMinkowskiEMFieldTransportProof = True
 prfAuditMinkowskiEMFieldTransport = Refl
+
+||| Audit: MinkowskiEMField <-> Maxel AVL tree round-trip preserves exact field coordinates.
+public export
+auditEMMaxelRoundTripProof : Bool
+auditEMMaxelRoundTripProof =
+  let em = MkMinkowskiEM [intToBoxInt 6, intToBoxInt 4] (intToBoxInt 2)
+  in maxelToEM (emToMaxel em) == em
+
+||| Audit: MinkowskiEMField <-> Dihedron2 model stencil round-trip preserves exact field coordinates.
+public export
+auditEMDihedron2RoundTripProof : Bool
+auditEMDihedron2RoundTripProof =
+  let em = MkMinkowskiEM [intToBoxInt 8, intToBoxInt (-2)] (intToBoxInt 4)
+  in dihedron2ToEM (emToDihedron2 em) == em
+
+||| Audit: Deforested stream boost preserves scaled quadrance S' = N(α)² S across multiple field states.
+public export
+auditStreamBoostEMFieldProof : Bool
+auditStreamBoostEMFieldProof =
+  let em1 = MkMinkowskiEM [intToBoxInt 3, intToBoxInt 4] (intToBoxInt 0)
+      em2 = MkMinkowskiEM [intToBoxInt 5, intToBoxInt 0] (intToBoxInt 3)
+      boost = mkRationalBoostS (intToBoxInt 3) (intToBoxInt 1)
+      normBoost = projNorm boost
+      factor = normBoost * normBoost
+      inStrm = stream [em1, em2]
+      outStrm = streamBoostEMField boost inStrm
+      res = foldStreamNat 2 (\acc, em => acc ++ [em]) (the (List MinkowskiEMField) []) outStrm
+  in length res == 2 &&
+     emScalarInvariant (head' res) == factor * emScalarInvariant em1
+  where
+    head' : List MinkowskiEMField -> MinkowskiEMField
+    head' (x :: _) = x
+    head' [] = MkMinkowskiEM [0, 0] 0
+
+||| Audit: Deforested stream boost accumulation applies consecutive boosts in order.
+public export
+auditStreamAccumulateEMBoostsProof : Bool
+auditStreamAccumulateEMBoostsProof =
+  let em0 = MkMinkowskiEM [intToBoxInt 3, intToBoxInt 4] (intToBoxInt 0)
+      b1 = mkRationalBoostR (intToBoxInt 2) (intToBoxInt 1)
+      b2 = mkRationalBoostR (intToBoxInt 3) (intToBoxInt 1)
+      boostStrm = stream [b1, b2]
+      outStrm = streamAccumulateEMBoosts boostStrm em0
+      res = foldStreamNat 2 (\acc, em => acc ++ [em]) (the (List MinkowskiEMField) []) outStrm
+      finalBoost = mulProjDihedron (mulProjDihedron idProjDihedron b1) b2
+      expectedFinalEM = boostEMFieldProjective finalBoost em0
+  in length res == 2 &&
+     last' res == expectedFinalEM
+  where
+    last' : List MinkowskiEMField -> MinkowskiEMField
+    last' [x] = x
+    last' (_ :: xs) = last' xs
+    last' [] = MkMinkowskiEM [0, 0] 0

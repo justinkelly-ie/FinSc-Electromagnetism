@@ -10,6 +10,7 @@ import public Stage1.EM.EMScaleTransforms
 import public Stage1.EM.Gauge
 import public Stage1.EM.Hodge
 import public Stage1.EM.Maxwell
+import public Stage1.EM.MinkowskiFaraday
 import public Stage1.Reflect.Auditor.EM
 
 %default total

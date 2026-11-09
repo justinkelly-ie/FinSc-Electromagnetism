@@ -3,7 +3,7 @@ version = 0.3.0
 authors = "Justin Kelly"
 brief   = "Layer 4b Constructive Discrete Electromagnetism & Gauge Field Engine."
 
-depends = FinSc-Geometry, FinSc-Multiset, FinSc-Metric-Substrate, FinSc-Phase-Unfolding, base, linear
+depends = FinSc-Geometry, FinSc-Multiset, FinSc-Metric-Substrate, FinSc-Phase-Unfolding, FinSc-Dihedron, base, linear
 sourcedir = "src"
 
 modules = Electromagnetism,
@@ -17,4 +17,5 @@ modules = Electromagnetism,
           Stage1.EM.Gauge,
           Stage1.EM.Hodge,
           Stage1.EM.Maxwell,
+          Stage1.EM.MinkowskiFaraday,
           Stage1.Reflect.Auditor.EM

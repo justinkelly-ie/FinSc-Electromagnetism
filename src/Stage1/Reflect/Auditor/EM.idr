@@ -8,6 +8,7 @@ import public Stage1.EM.Gauge
 import public Stage0.Flux
 import public Stage1.EM.Hodge
 import public Stage1.EM.Maxwell
+import public Stage1.EM.MinkowskiFaraday
 
 %default total
 
@@ -39,9 +40,18 @@ public export
 auditEMDecNilpotencyProofExport : Bool
 auditEMDecNilpotencyProofExport = auditDecNilpotencyEMProof
 
+public export
+auditEMMinkowskiFaradayTransportProofExport : Bool
+auditEMMinkowskiFaradayTransportProofExport = auditMinkowskiEMFieldTransportProof
+
 ------------------------------------------------------------------------
 -- 2. ELABORATOR REFLECTION MACROS (RULE 01)
 ------------------------------------------------------------------------
+
+public export
+auditEMWitness : (target : Bool) -> Elab (target = True)
+auditEMWitness True = pure Refl
+auditEMWitness False = fail "Compile-time EM invariant audit failed!"
 
 ||| Universal compile-time invariant auditing macro tactic for Electromagnetism.
 public export
@@ -55,3 +65,9 @@ public export
 %macro
 auditEMDecNilpotency : Elab (Stage1.Reflect.Auditor.EM.auditEMDecNilpotencyProofExport = True)
 auditEMDecNilpotency = pure Refl
+
+||| Macro verifying 3D Minkowski rational Lorentz electromagnetic field transport (S' = N(α)² S).
+public export
+%macro
+auditEMMinkowskiFaradayTransport : Elab (Stage1.Reflect.Auditor.EM.auditEMMinkowskiFaradayTransportProofExport = True)
+auditEMMinkowskiFaradayTransport = auditEMWitness Stage1.Reflect.Auditor.EM.auditEMMinkowskiFaradayTransportProofExport

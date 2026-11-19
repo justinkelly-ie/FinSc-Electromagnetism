@@ -19,20 +19,20 @@ import Data.Vect
 
 ||| Single-pass streaming plaquette magnetic flux B_pl = ∮ A · dl enclosed by a stream of pixel edges.
 public export
-streamMultisetPlaquetteFlux : FusedStream Pixel -> Multiset BoxInt Pixel -> BoxInt
+streamMultisetPlaquetteFlux : FusedStream Pixel -> Carrier Pixel -> BoxInt
 streamMultisetPlaquetteFlux loopEdges potMultiset =
-  foldStreamNat (gohSteps hyperbolicGohFuelModel) (\acc, p => addBox (lookupCount p potMultiset) acc) (intToBoxInt 0) loopEdges
+  foldStreamNat (gohSteps hyperbolicGohFuelModel) (\acc, p => addBox (lookupCarrier p potMultiset) acc) (intToBoxInt 0) loopEdges
 
 ||| Computes magnetic flux B_pl = ∮ A · dl enclosed by a closed loop of Pixel edges
-||| evaluated over a vector potential multiset A : Multiset BoxInt Pixel.
+||| evaluated over a vector potential carrier A : Carrier Pixel.
 public export
-computeMultisetPlaquetteFlux : List Pixel -> Multiset BoxInt Pixel -> BoxInt
+computeMultisetPlaquetteFlux : List Pixel -> Carrier Pixel -> BoxInt
 computeMultisetPlaquetteFlux loopEdges potMultiset =
   streamMultisetPlaquetteFlux (stream loopEdges) potMultiset
 
 ||| Single-pass streaming Faraday EMF across an edge stream.
 public export
-streamMultisetFaradayEMF : Multiset BoxInt Pixel -> Multiset BoxInt Pixel -> FusedStream Pixel -> BoxInt -> BoxInt
+streamMultisetFaradayEMF : Carrier Pixel -> Carrier Pixel -> FusedStream Pixel -> BoxInt -> BoxInt
 streamMultisetFaradayEMF potT1 potT2 loopEdges dt =
   let fluxT1 = streamMultisetPlaquetteFlux loopEdges potT1
       fluxT2 = streamMultisetPlaquetteFlux loopEdges potT2
@@ -40,9 +40,9 @@ streamMultisetFaradayEMF potT1 potT2 loopEdges dt =
   in intToBoxInt (-1) * deltaFlux
 
 ||| Computes Faraday's Law of Electromotive Force (EMF): E_emf = - (Flux_t2 - Flux_t1) / dt
-||| over a loop specified by pure multiset vector potentials.
+||| over a loop specified by pure carrier vector potentials.
 public export
-computeMultisetFaradayEMF : Multiset BoxInt Pixel -> Multiset BoxInt Pixel -> List Pixel -> BoxInt -> BoxInt
+computeMultisetFaradayEMF : Carrier Pixel -> Carrier Pixel -> List Pixel -> BoxInt -> BoxInt
 computeMultisetFaradayEMF potT1 potT2 loopEdges dt =
   let fluxT1 = computeMultisetPlaquetteFlux loopEdges potT1
       fluxT2 = computeMultisetPlaquetteFlux loopEdges potT2

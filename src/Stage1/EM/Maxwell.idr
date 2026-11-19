@@ -1,6 +1,7 @@
 module Stage1.EM.Maxwell
 
 import Stage0.BoxInt
+import Stage0.Token
 import Stage1.Order.Preorder
 import public Stage1.Basis.Coordinate
 import Stage1.GrassmannCalculus
@@ -178,24 +179,73 @@ getB r c m =
       v2 = lookupCellMultiset (MkPixel c r) m
   in if boxIsNonZero v1 then v1 else (if boxIsNonZero v2 then (intToBoxInt (-1) * v2) else intToBoxInt 0)
 
+public export
+emPixel01 : Pixel
+emPixel01 = MkPixel 0 1
+
+public export
+emPixel02 : Pixel
+emPixel02 = MkPixel 0 2
+
+public export
+emPixel03 : Pixel
+emPixel03 = MkPixel 0 3
+
+public export
+emPixel12 : Pixel
+emPixel12 = MkPixel 1 2
+
+public export
+emPixel23 : Pixel
+emPixel23 = MkPixel 2 3
+
+public export
+emPixel31 : Pixel
+emPixel31 = MkPixel 3 1
+
+||| Single-pass canonical electric edge reader: returns (Ex, Ey, Ez, hasExtraKeys) with zero key allocation.
+public export
+scanCanonicalE3 : EdgeCochain -> (BoxInt, BoxInt, BoxInt, Bool)
+scanCanonicalE3 BoxLeaf = (MkBoxInt 0, MkBoxInt 0, MkBoxInt 0, False)
+scanCanonicalE3 (BoxNode _ l (ConsCell (MkToken r) (ConsCell (MkToken c) ZeroCell)) w rTree) =
+  let (lx, ly, lz, lExtra) = scanCanonicalE3 l
+      (rx, ry, rz, rExtra) = scanCanonicalE3 rTree
+      ex = addBox (addBox lx rx) (if r == 0 && c == 1 then w else MkBoxInt 0)
+      ey = addBox (addBox ly ry) (if r == 0 && c == 2 then w else MkBoxInt 0)
+      ez = addBox (addBox lz rz) (if r == 0 && c == 3 then w else MkBoxInt 0)
+      extra = lExtra || rExtra || not (r == 0 && (c == 1 || c == 2 || c == 3))
+  in (ex, ey, ez, extra)
+
+||| Single-pass canonical magnetic face reader: returns (Bx, By, Bz, hasExtraKeys) with zero key allocation.
+public export
+scanCanonicalB3 : FaceCochain -> (BoxInt, BoxInt, BoxInt, Bool)
+scanCanonicalB3 BoxLeaf = (MkBoxInt 0, MkBoxInt 0, MkBoxInt 0, False)
+scanCanonicalB3 (BoxNode _ l (ConsCell (MkToken r) (ConsCell (MkToken c) ZeroCell)) w rTree) =
+  let (lx, ly, lz, lExtra) = scanCanonicalB3 l
+      (rx, ry, rz, rExtra) = scanCanonicalB3 rTree
+      bx = addBox (addBox lx rx) (if r == 2 && c == 3 then w else MkBoxInt 0)
+      by = addBox (addBox ly ry) (if r == 3 && c == 1 then w else MkBoxInt 0)
+      bz = addBox (addBox lz rz) (if r == 1 && c == 2 then w else MkBoxInt 0)
+      extra = lExtra || rExtra || not ((r == 2 && c == 3) || (r == 3 && c == 1) || (r == 1 && c == 2))
+  in (bx, by, bz, extra)
+
 ||| Computes discrete curl of Electric field 1-form E -> FaceCochain (2-form):
 ||| (curl E)_x on face (2, 3) = E_z - E_y
 ||| (curl E)_y on face (3, 1) = E_x - E_z
 ||| (curl E)_z on face (1, 2) = E_y - E_x
 public export
 discreteCurlElectric : EdgeCochain -> FaceCochain
+discreteCurlElectric BoxLeaf = BoxLeaf
 discreteCurlElectric e =
-  let ex = getE0 1 e
-      ey = getE0 2 e
-      ez = getE0 3 e
-      cx = ez - ey
-      cy = ex - ez
-      cz = ey - ex
-      tree0 : BoxMultisetTree Pixel = BoxLeaf
-      t1 = if boxIsNonZero cx then setCellMultiset (MkPixel 2 3) cx tree0 else tree0
-      t2 = if boxIsNonZero cy then setCellMultiset (MkPixel 3 1) cy t1 else t1
-      t3 = if boxIsNonZero cz then setCellMultiset (MkPixel 1 2) cz t2 else t2
-  in t3
+  case scanCanonicalE3 e of
+    (ex0, ey0, ez0, extra) =>
+      let ex = if extra then getE0 1 e else ex0
+          ey = if extra then getE0 2 e else ey0
+          ez = if extra then getE0 3 e else ez0
+          cx = ez - ey
+          cy = ex - ez
+          cz = ey - ex
+      in mkSortedBox3 emPixel12 cz emPixel23 cx emPixel31 cy
 
 ||| Computes discrete curl of Magnetic field 2-form B -> EdgeCochain (1-form):
 ||| (curl B)_x on edge (0, 1) = B_z - B_y
@@ -203,18 +253,17 @@ discreteCurlElectric e =
 ||| (curl B)_z on edge (0, 3) = B_y - B_x
 public export
 discreteCurlMagnetic : FaceCochain -> EdgeCochain
+discreteCurlMagnetic BoxLeaf = BoxLeaf
 discreteCurlMagnetic b =
-  let bx = getB 2 3 b
-      by = getB 3 1 b
-      bz = getB 1 2 b
-      cx = bz - by
-      cy = bx - bz
-      cz = by - bx
-      tree0 : BoxMultisetTree Pixel = BoxLeaf
-      t1 = if boxIsNonZero cx then setCellMultiset (MkPixel 0 1) cx tree0 else tree0
-      t2 = if boxIsNonZero cy then setCellMultiset (MkPixel 0 2) cy t1 else t1
-      t3 = if boxIsNonZero cz then setCellMultiset (MkPixel 0 3) cz t2 else t2
-  in t3
+  case scanCanonicalB3 b of
+    (bx0, by0, bz0, extra) =>
+      let bx = if extra then getB 2 3 b else bx0
+          by = if extra then getB 3 1 b else by0
+          bz = if extra then getB 1 2 b else bz0
+          cx = bz - by
+          cy = bx - bz
+          cz = by - bx
+      in mkSortedBox3 emPixel01 cx emPixel02 cy emPixel03 cz
 
 ||| Advances discrete Maxwell field cochains via Discrete Exterior Calculus (DEC):
 ||| E_{n+1} = E_n + dt * (curl B - J)
@@ -222,14 +271,67 @@ discreteCurlMagnetic b =
 public export
 stepMaxwellFieldDEC : (dt : BoxInt) -> (curvDefect : BoxInt) -> MaxwellState -> MaxwellState
 stepMaxwellFieldDEC dt defect (e, b, j, rho) =
-  let curlB = discreteCurlMagnetic b
-      curlE = discreteCurlElectric e
-      jNeg  = scaleCellMultiset (intToBoxInt (-1)) j
-      bDelta = scaleCellMultiset (intToBoxInt (-1) * dt) curlE
-      eDelta = scaleCellMultiset dt (addCellMultiset curlB jNeg)
-      nextE  = addCellMultiset e eDelta
-      nextB  = addCellMultiset b bDelta
-  in (nextE, nextB, j, rho)
+  let (ex, ey, ez, eExtra) = scanCanonicalE3 e
+      (bx, by, bz, bExtra) = scanCanonicalB3 b
+      (jx, jy, jz, jExtra) = scanCanonicalE3 j
+  in if not eExtra && not bExtra && not jExtra
+       then let curlBx = bz - by
+                curlBy = bx - bz
+                curlBz = by - bx
+                curlEx = ez - ey
+                curlEy = ex - ez
+                curlEz = ey - ex
+                nextEx = addBox ex (mulBox dt (subBox curlBx jx))
+                nextEy = addBox ey (mulBox dt (subBox curlBy jy))
+                nextEz = addBox ez (mulBox dt (subBox curlBz jz))
+                nextBx = subBox bx (mulBox dt curlEx)
+                nextBy = subBox by (mulBox dt curlEy)
+                nextBz = subBox bz (mulBox dt curlEz)
+                nextE = mkSortedBox3 emPixel01 nextEx emPixel02 nextEy emPixel03 nextEz
+                nextB = mkSortedBox3 emPixel12 nextBz emPixel23 nextBx emPixel31 nextBy
+            in (nextE, nextB, j, rho)
+       else let curlB = discreteCurlMagnetic b
+                curlE = discreteCurlElectric e
+                jNeg  = scaleCellMultiset (intToBoxInt (-1)) j
+                bDelta = scaleCellMultiset (intToBoxInt (-1) * dt) curlE
+                eDelta = scaleCellMultiset dt (addCellMultiset curlB jNeg)
+                nextE  = addCellMultiset e eDelta
+                nextB  = addCellMultiset b bDelta
+            in (nextE, nextB, j, rho)
+
+||| Scalar fast path advancing MaxwellState directly from scalar source current (j1, j2, j3)
+||| without constructing intermediate EdgeCochain trees unless j is non-zero.
+public export
+stepMaxwellFieldDECDirect : (dt : BoxInt) -> (j1 : BoxInt) -> (j2 : BoxInt) -> (j3 : BoxInt) -> (rhoSrc : CellCochain) -> MaxwellState -> MaxwellState
+stepMaxwellFieldDECDirect dt j1 j2 j3 rhoSrc (e, b, _, _) =
+  let jTree = mkSortedBox3 emPixel01 j1 emPixel02 j2 emPixel03 j3
+  in stepMaxwellFieldDEC dt (MkBoxInt 0) (e, b, jTree, rhoSrc)
+
+||| Zero-scan scalar DEC Maxwell step when canonical E and B components are already unpacked.
+public export
+stepMaxwellScalars : (dt, ex, ey, ez, bx, by, bz, j1, j2, j3 : BoxInt) -> (rhoSrc : CellCochain) -> MaxwellState -> MaxwellState
+stepMaxwellScalars dt ex ey ez bx by bz j1 j2 j3 rhoSrc _ =
+  let zFields = boxIsZero ex && boxIsZero ey && boxIsZero ez && boxIsZero bx && boxIsZero by && boxIsZero bz
+      zCur    = boxIsZero j1 && boxIsZero j2 && boxIsZero j3
+  in if zFields && zCur
+       then (BoxLeaf, BoxLeaf, BoxLeaf, rhoSrc)
+       else
+         let jTree = if zCur then BoxLeaf else mkSortedBox3 emPixel01 j1 emPixel02 j2 emPixel03 j3
+             curlBx = bz - by
+             curlBy = bx - bz
+             curlBz = by - bx
+             curlEx = ez - ey
+             curlEy = ex - ez
+             curlEz = ey - ex
+             nextEx = addBox ex (mulBox dt (subBox curlBx j1))
+             nextEy = addBox ey (mulBox dt (subBox curlBy j2))
+             nextEz = addBox ez (mulBox dt (subBox curlBz j3))
+             nextBx = subBox bx (mulBox dt curlEx)
+             nextBy = subBox by (mulBox dt curlEy)
+             nextBz = subBox bz (mulBox dt curlEz)
+             nextE = mkSortedBox3 emPixel01 nextEx emPixel02 nextEy emPixel03 nextEz
+             nextB = mkSortedBox3 emPixel12 nextBz emPixel23 nextBx emPixel31 nextBy
+         in (nextE, nextB, jTree, rhoSrc)
 
 ||| Formal Proof Witness: Vacuum Maxwell state projects to zero 4D SquareMaxel.
 public export

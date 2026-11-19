@@ -143,14 +143,12 @@ fusedPhotonStateStream strm =
   mapStream (\tok => MkPhotonToken (tok.polarization) (tok.frequency + intToBoxInt 1)) strm
 
 ||| Evaluates total photon stream energy directly across a PhotonStateToken stream using a fueled fold.
-%spec f
 public export
 fusedComputePhotonStreamEnergyDirect : Fuel -> FusedStream PhotonStateToken -> BoxInt
 fusedComputePhotonStreamEnergyDirect f strm =
   foldStreamFuel f (\acc, tok => addBox (frequency tok) acc) (intToBoxInt 0) strm
 
 ||| Evaluates total photon stream energy directly across a PhotonStateToken stream over Nat fuel.
-%spec fuel
 public export
 fusedComputePhotonStreamEnergyNatDirect : Nat -> FusedStream PhotonStateToken -> BoxInt
 fusedComputePhotonStreamEnergyNatDirect fuel strm =
@@ -177,7 +175,6 @@ auditPhotonStreamProof =
 
 ||| Evaluates closed boundary surface Poynting energy radiation from a stream of boundary link transforms.
 ||| Deforests link transitions without matrix allocations.
-%spec fuelSteps
 public export
 streamBoundaryPoyntingRadiationNat : Nat -> FusedStream (MaxelTransform (Fin 2) (Fin 2)) -> BoxInt
 streamBoundaryPoyntingRadiationNat fuelSteps linkStream =
@@ -190,7 +187,6 @@ streamBoundaryPoyntingRadiationNat fuelSteps linkStream =
       bVal = intToBoxInt 0
   in addBox (mulBox eVal eVal) (mulBox bVal bVal)
 
-%spec f
 public export
 streamBoundaryPoyntingRadiation : Fuel -> FusedStream (MaxelTransform (Fin 2) (Fin 2)) -> BoxInt
 streamBoundaryPoyntingRadiation f linkStream =

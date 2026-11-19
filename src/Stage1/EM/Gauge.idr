@@ -20,7 +20,6 @@ GaugeFunction : Type
 GaugeFunction = PointCochain
 
 ||| Applies a U(1) Gauge Transformation to a vector potential: A' = A + d0(chi).
-%inline
 public export
 applyGaugeTransformation : List (Unixel, Unixel) -> GaugeFunction -> VectorPotential -> VectorPotential
 applyGaugeTransformation edges chi a =
@@ -28,7 +27,6 @@ applyGaugeTransformation edges chi a =
   in addCellMultiset a d0Chi
 
 ||| Computes discrete Aharonov-Bohm holonomy phase loop sum: H = ∮ A · dl around a closed loop.
-%inline
 public export
 computeAharonovBohmHolonomy : Vect 4 (Unixel, Unixel) -> VectorPotential -> BoxInt
 computeAharonovBohmHolonomy loop a =

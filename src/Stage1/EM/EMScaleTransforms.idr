@@ -28,7 +28,7 @@ Show ConcreteEMState where
 public export
 quadStreamToConcreteEM : QuadStreamMultiset BoxInt -> ConcreteEMState
 quadStreamToConcreteEM (MkQuadStream e h p s) =
-  MkConcreteEM (multisetSum e + multisetSum h)
+  MkConcreteEM (totalMassBox e + totalMassBox h)
 
 ||| Abstract macro electromagnetic domain state wrapping field energy BoxInt
 public export
@@ -48,11 +48,11 @@ Show EMMacroDomain where
 public export
 quadStreamToEMMacro : QuadStreamMultiset BoxInt -> EMMacroDomain
 quadStreamToEMMacro (MkQuadStream e h p s) =
-  MkEMMacro (multisetSum e + multisetSum h + multisetSum p)
+  MkEMMacro (totalMassBox e + totalMassBox h + totalMassBox p)
 
 ||| Heterogeneous MultisetScaleAdjunction instance (f_* ⊣ f^*) between ConcreteEMState and EMMacroDomain
 public export
-MultisetScaleAdjunction ConcreteEMState EMMacroDomain where
+MultisetScaleDuality ConcreteEMState EMMacroDomain where
   f_pushforward (MkConcreteEM f) = MkEMMacro f
   f_pullback (MkEMMacro e)       = MkConcreteEM e
   verifyUnit _   = Refl
@@ -122,7 +122,7 @@ proofEMHomInv (AddM (val, MkAbstractEMFunctor (MkEMMacro f) payload) weight rest
 
 ||| Category-Theoretic MultisetAdjunction instance L_EM ⊣ R_EM for electromagnetic scale space
 public export
-MultisetAdjunction ConcreteEMFunctor AbstractEMFunctor where
+MultisetDuality ConcreteEMFunctor AbstractEMFunctor where
   leftAdjoint x = MkConcreteEMFunctor (MkConcreteEM (intToBoxInt 0)) x
   rightAdjoint (MkConcreteEMFunctor _ x) = x
   homTensorIso = emHomTensorIso
@@ -130,10 +130,10 @@ MultisetAdjunction ConcreteEMFunctor AbstractEMFunctor where
   verifyHomIso = proofEMHomIso
   verifyHomInv = proofEMHomInv
 
-||| 2LTT Subfibration Reflection Functor instance for Electromagnetic Scale Adjunction
+||| 2LTT Subfibration Reflection Duality instance for Electromagnetic Scale Duality
 public export
-StrictReflectionFunctor ConcreteEMFunctor AbstractEMFunctor where
-  reflectionAdjunction = %search
+StrictReflectionDuality ConcreteEMFunctor AbstractEMFunctor where
+  reflectionDuality = %search
   reflectionRefl _ = Refl
 
 
@@ -159,7 +159,7 @@ auditEMScaleTransformProof =
 --------------------------------------------------------------------------------
 
 ||| Deforested 2LTT staged code generator transducer for EM scale energy evaluation.
-%inline public export
+public export
 stagedEMScalePipeline : QuadStreamMultiset BoxInt -> Code EMMacroDomain
 stagedEMScalePipeline qs = quote (quadStreamToEMMacro qs)
 

@@ -32,7 +32,6 @@ computeElectricFieldMultiset edges phi =
      ) emptyCellMultiset edges
 
 ||| Computes the electrostatic field 1-form E = -d0(Phi) over directed edge pixels.
-%inline
 public export
 computeElectricField : List (Unixel, Unixel) -> ElectricPotential -> EdgeCochain
 computeElectricField edges phi =
@@ -40,13 +39,11 @@ computeElectricField edges phi =
   in computeElectricFieldMultiset pxEdges phi
 
 ||| Computes the magnetic flux 2-form B = d1(A) over directed face pixels.
-%inline
 public export
 computeMagneticField : List (Pixel, Vect 4 (Unixel, Unixel)) -> VectorPotential -> FaceCochain
 computeMagneticField faces a = grassmannCoboundary1 faces a
 
 ||| Computes the discrete charge density 3-form rho = d2(F) over 3D volume voxels.
-%inline
 public export
 computeChargeDivergence : List (Voxel, Vect 6 (Pixel, BoxInt)) -> FaceCochain -> CellCochain
 computeChargeDivergence voxels f = grassmannCoboundary2 voxels f
@@ -59,7 +56,6 @@ computePoissonLaplacianMultiset edges phi =
   in scaleCellMultiset (intToBoxInt (-1)) (boundaryCell1To0 eField)
 
 ||| Computes the discrete Poisson-Laplacian Delta(Phi) = d0* d0(Phi) over vertex singletons.
-%inline
 public export
 computePoissonLaplacian : List (Unixel, Unixel) -> ElectricPotential -> Vexel
 computePoissonLaplacian edges phi =
@@ -106,11 +102,8 @@ computePoissonLaplacianStream f edges phi =
 ------------------------------------------------------------------------
 
 public export
-multisetToMaxel : Multiset BoxInt Pixel -> Maxel
-multisetToMaxel ZeroM = BoxLeaf
-multisetToMaxel (AddM p w rest) =
-  let t = multisetToMaxel rest
-  in if boxIsZero w then t else setCellMultiset p (lookupCellMultiset p t + w) t
+multisetToMaxel : Carrier Pixel -> Maxel
+multisetToMaxel = canonicalizeMaxel
 
 ||| Proves that the electrostatic field from a constant potential is identically zero.
 public export

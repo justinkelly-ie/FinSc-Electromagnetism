@@ -195,7 +195,7 @@ streamAccumulateEMBoosts boostStrm em0 =
 ------------------------------------------------------------------------
 
 ||| Deforested 2LTT staged code generator for electromagnetic field Lorentz boosts.
-%inline public export
+public export
 stagedBoostEMField : ProjectiveDihedron -> MinkowskiEMField -> Code MinkowskiEMField
 stagedBoostEMField alpha em = quote (boostEMFieldProjective alpha em)
 

@@ -16,13 +16,11 @@ import Stage1.TypeTheory.Staging
 ------------------------------------------------------------------------
 
 ||| Applies the 3D Combinatorial Hodge Dual to convert an Electric Field 1-Form E to Dual Magnetic 2-Form B*.
-%inline
 public export
 hodgeDualElectricToMagnetic : EdgeCochain -> FaceCochain
 hodgeDualElectricToMagnetic eField = combinatorialDual1To2 eField
 
 ||| Applies the 3D Combinatorial Hodge Dual to convert a Magnetic Field 2-Form B to Dual Electric 1-Form E*.
-%inline
 public export
 hodgeDualMagneticToElectric : FaceCochain -> EdgeCochain
 hodgeDualMagneticToElectric bField = combinatorialDual2To1 bField
@@ -38,7 +36,6 @@ HodgeComponents : Type
 HodgeComponents = (Maxel, Maxel, Maxel)
 
 ||| Decomposes an arbitrary electromagnetic Maxel field vector into discrete Hodge components.
-%inline
 public export
 hodgeDecomposeEMField : Maxel -> HodgeComponents
 hodgeDecomposeEMField field = (neutral, neutral, field)
